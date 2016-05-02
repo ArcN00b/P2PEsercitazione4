@@ -188,11 +188,9 @@ class Window(Frame):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     tracker = True
-
-    db=ManageDB.ManageDB()
     
     if tracker:
-        server=Tracker(db,Utility.MY_IPV4+'|'+Utility.MY_IPV6,Utility.PORT)
+        server=Tracker(Utility.database,Utility.MY_IPV4+'|'+Utility.MY_IPV6,Utility.PORT)
         server.run()
     
     else:

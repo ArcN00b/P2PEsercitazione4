@@ -51,77 +51,66 @@ class Worker(threading.Thread):
             # controllo del comando effettuato
             # LOGI
             if command == "LOGI":
-                # recupero ip e porta
-                ipp2p = fields[0]
-                pp2p = fields[1]
+                True
+                # TODO da scrivere
 
-                # costruzione della risposta "ALGI"
-                resp = Response.login(self.database, ipp2p, pp2p)
-            # ADDF
-            elif command == "ADDF":
-                # recupero session id
-                sessionID = fields[0]
-                # recupero filemd5
-                fileMD5 = fields[1]
-                # recupero file name
-                fileName = fields[2]
+            elif command == "ALGI":
+                True
+                # Todo da scrivere
 
-                # controllo se l'utente si e' precedentemente loggato
-                if len(self.database.findClient(sessionID, '', '', '2')) != 0:
-                    resp = Response.addFile(self.database, fileMD5, sessionID, fileName)
-                else:
-                    # rispondo con 000 per indicare file non aggiunto
-                    resp = "AADD" + "000"
-            # DELF
-            elif command == "DELF":
-                # recupero sessionID
-                sessionID = fields[0]
-                # recupero del fileMD5
-                fileMD5 = fields[1]
-                # controllo se l'utente si e' precedentemente loggato
-                if len(self.database.findClient(sessionID, '', '', '2')) != 0:
-                    resp = Response.remove(self.database, fileMD5, sessionID)
-                else:
-                    # rispondo con 000 per indicare file non rimosso
-                    resp = "AADD" + "999"
-            # FIND
-            elif command == "FIND":
-                # recupero sessionID
-                sessionID = fields[0]
-                # recupero campo di ricerca
-                campo = fields[1];
-                # controllo se l'utente si e' precedentemente loggato
-                if len(self.database.findClient(sessionID, '', '', '2')) != 0:
-                    resp = Response.search(self.database, campo)
-                else:
-                    # rispondo con 000 se utente non autorizzato
-                    resp = "AFIN" + "000"
-            # DREG
-            elif command == "DREG":
-                # recupero del sessionID
-                sessionID = fields[0]
-                # recupero fileMD5
-                fileMD5 = fields[1]
-                # controllo se l'utente si e' precedentemente loggato
-                if len(self.database.findClient(sessionID, '', '', '2')) != 0:
-                    resp = Response.download(self.database, sessionID, fileMD5)
-                else:
-                    # utente non presente, nessun file scaricato da aggiornare
-                    resp = "ADRE" + "000"
-            # LOGO
+            elif command == "ADDR":
+                True
+                # TOdo da scrivere
+
+            elif command == "AADR":
+                True
+                # Todo da Scrivere
+
+            elif command == "LOOK":
+                msgRet=""
+                self.database
+
+
+            elif command == "ALOO":
+                True
+                # Todo da scrivere
+
+            elif command == "FCHU":
+                True
+                # Todo da scrivere
+
+            elif command == "AFCH":
+                True
+                # Todo da scrivere
+
+            elif command == "RETP":
+                True
+                # Todo da scrivere
+
+            elif command == "AREP":
+                True
+                # Todo da scrivere
+
+            elif command == "RPAD":
+                True
+                # Todo da scrivere
+
+            elif command == "APAD":
+                True
+                # TOdo da scrivere
+
             elif command == "LOGO":
-                # recupero sessionID
-                sessionID = fields[0]
-                # controllo se l'utente si e' precedentemente loggato
-                if len(self.database.findClient(sessionID, '', '', '2')) != 0:
-                    resp = Response.logout(self.database, sessionID)
-                else:
-                    # utente non presente nessun file da eliminare
-                    resp = "ALGO" + "000"
+                True
+                # Todo da scrivere
 
-                # termine del ciclo
-                running = False
-            # se non ricevo niente di valido response va a none
+            elif command == "NLOG":
+                True
+                # Todo da scrivere
+
+            elif command == "ALOG":
+                True
+                # Todo da scrivere
+
             else:
                 resp = None
                 running = False
@@ -141,4 +130,5 @@ class Worker(threading.Thread):
         # chiude la connessione quando non ci sono più dati
         print("Chiusura socket di connessione")
         # chiude il client
+        self.client.shutdown()
         self.client.close()

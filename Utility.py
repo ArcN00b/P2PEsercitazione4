@@ -34,7 +34,6 @@ class Utility:
     # Metodo per trasformare un vettore di byte nella stringa di bit
     @staticmethod
     def toBit(stringa):
-        stringa="12345"
         if type(stringa) is str:
             s=bytes(stringa,'utf-8')
         else:
