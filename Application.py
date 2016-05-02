@@ -4,6 +4,9 @@ from tkinter import *
 from tkinter.ttk import Progressbar
 from tkinter.filedialog import askopenfilename
 from MultiServer import *
+from Request import *
+from Response import *
+from Utility import *
 import logging
 
 class Window(Frame):
@@ -135,6 +138,12 @@ class Window(Frame):
         self.text_console.insert(END,mess)
 
     def btn_login_click(self):
+
+        sock_end = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
+        Request.login(sock_end)
+        Response.login_ack(sock_end)
+        Response.close_socket(sock_end)
+
         self.status.set("SEI LOGGATO")
         self.print_console("LOGIN")
 
