@@ -4,6 +4,7 @@ import struct
 from Parser import *
 from Response import *
 from ManageDB import *
+from Utility import *
 
 
 # Costruttore che inizializza gli attributi del Worker
@@ -59,25 +60,74 @@ class Worker(threading.Thread):
                 # Todo da scrivere
 
             elif command == "ADDR":
-                True
-                # TOdo da scrivere
+                # Todo da testare
+                msgRet="AADR"
+                ssId=fields[0]
+                lFile=fields[1]
+                lPart=fields[2]
+                name=fields[3]
+                md5=fields[4]
+                if len(self.database.findPeer(ssId,None,None,2))>0:
+                    a=int(lFile)
+                    b=int(lPart)
+                    if a%b==0:
+                        numPart=a//b
+                    else:
+                        numPart=(a//b)+1
+
+                    if numPart%8==0:
+                        numPart8=numPart//8
+                    else:
+                        numPart8=(numPart//8)+1
+
+                    parte='1'*numPart+'0'*(numPart%8)
+                    Utility.database.addFile(ssId,name,md5,lFile,lPart)
+                    Utility.database.addPart(md5,ssId,parte)
+                    msgRet=msgRet+'{:0>8}'.format(numPart)
+                    self.client.sendall(msgRet)
 
             elif command == "AADR":
                 True
                 # Todo da Scrivere
 
             elif command == "LOOK":
-                msgRet=""
-                self.database
+                # Todo da testare
+                msgRet="ALOO"
+                ssId=fields[0]
+                name=fields[1]
+                # controllo se il sessionId è nel database
+                if len(self.database.findPeer(ssId,None,None,2))>0:
+                    dati=self.database.findMd5(name.strip())
+                    msgRet=msgRet+'{:0>3}'.format(len(dati))
+                    for i in range(0,len(dati)):
+                        msgRet=msgRet+dati[i][0] #Aggiungo l'iesimo md5
+                        msgRet=msgRet+dati[i][1]+' '*(100-len(dati[i][1])) #Aggiungo il nome del file
+                        msgRet=msgRet+'{:0>10}'.format(int(dati[i][2])) #Aggiungo la lunghezza del file
+                        msgRet=msgRet+'{:0>6}'.format(int(dati[i][3])) #Aggiungo la lunghezza della parte
 
+                    self.client.sendall(msgRet.encode())
 
             elif command == "ALOO":
                 True
                 # Todo da scrivere
 
             elif command == "FCHU":
-                True
-                # Todo da scrivere
+                # Todo da testare
+                msgRet="AFCH".encode()
+                ssId=fields[0]
+                md5=fields[1]
+                if len(self.database.findPeer(ssId,None,None,2))>0:
+                    dati=self.database.findPartForMd5(md5)
+                    num=len(dati)
+                    msgRet=msgRet+('{:0>3}'.format(num)).encode()
+                    for i in range(0,num):
+                        datiPeer=self.database.findPeer(dati[i][0])
+                        msgRet=msgRet+datiPeer[0][0].encode()
+                        msgRet=msgRet+datiPeer[0][1].encode()
+                        tmp=Utility.toBytes(dati[i][1],0)
+                        msgRet=msgRet+tmp
+
+                    self.client.sendall(msgRet)
 
             elif command == "AFCH":
                 True

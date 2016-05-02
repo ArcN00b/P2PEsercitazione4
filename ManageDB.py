@@ -124,8 +124,6 @@ class ManageDB:
 
             conn.commit()
 
-            return conn
-
         except sqlite3.Error as e:
             # Gestisco l'eccezione
             if conn:
@@ -356,7 +354,7 @@ class ManageDB:
             c = conn.cursor()
 
             # Cerca il file
-            c.execute("SELECT DISTINCT MD5 FROM FILES WHERE NAME LIKE '%" + name + "%' ")
+            c.execute("SELECT MD5,NAME,LENFILE,LENPART FROM FILES WHERE NAME LIKE '%" + name + "%' ")
             conn.commit()
 
             result = c.fetchall()

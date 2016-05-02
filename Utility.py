@@ -43,7 +43,8 @@ class Utility:
         for i in range(0,len(s)):
             t=bin(s[i])[2:]
             t='0'*(8-len(t))+t
-            tmp= tmp+t[::-1]
+            t=t[::-1]
+            tmp= tmp+t
 
         return tmp
 
@@ -51,11 +52,18 @@ class Utility:
     # Prende la stringa e il numero di byte che sono presenti nella stringa
     @staticmethod
     def toBytes(stringa,num):
-        tmp=''
-        for i in range(0,num):
+        if num==0:
+            n=int(len(stringa)/8)
+        else:
+            n=num
+        tmp=b''
+        print(n)
+        for i in range(0,n):
             s=stringa[(i*8):(i*8+8)]
             t=s[::-1]
-            tmp=tmp+chr(int(t,2))
+            s=s.lstrip('0')
+            s=chr(int(t,2))
+            tmp=tmp+bytes(s,'utf-8')
 
         return tmp
 
