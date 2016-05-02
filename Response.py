@@ -11,9 +11,9 @@ class Response:
     #Metodo per la generazione della risposta ad una richiesta di login
     #Ritorna una stringa rappresentante il messaggio da inviare
     @staticmethod
-    def login_ack(socket_end):
+    def login_ack(sock_end):
         try:
-            data = socket_end.recv(512)
+            data = sock_end.recv(512)
             data = data.encode()
             command, fields = Parser.parse(data)
 
@@ -23,12 +23,30 @@ class Response:
         except Exception as e:
             logging.debug("ERROR on Receive " + str(e))
 
+    ## metodo che gestisce la risposta della logout
+    @staticmethod
+    def logout_ack(sock_end):
+        try:
+            data = sock_end.recv(512)
+            data = data.encode()
+            command, fields = Parser.parse(data)
+
+            if command == 'NLOG':
+                n_part_down = fields[0]
+                return False, n_part_down
+            else:
+                n_part_own = fields[0]
+                return True, n_part_own
+
+        except Exception as e:
+            logging.debug("ERROR on Receive " + str(e))
+
 
     ## questo metodo chiude la socket verificando se
     ## effettivamente si riesce a chiudere
     @staticmethod
-    def close_socket(socket_end):
+    def close_socket(sock_end):
         try:
-            socket_end.close()
+            sock_end.close()
         except Exception as e:
             logging.debug("ERROR on Close " + str(e))

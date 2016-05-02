@@ -19,6 +19,9 @@ class Utility:
     PORT_MY = 12345
     PATHDIR = '/home/marco/seedfolder'
 
+    ## variabili condivise in piu' parti del programma
+    SessionID = ''
+
     @staticmethod
     def getIp(stringa):
         t = stringa.find('|')

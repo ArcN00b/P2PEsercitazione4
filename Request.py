@@ -40,7 +40,19 @@ class Request:
             request = "LOGI"
             request = request + Utility.IP_MY + Utility.PORT_MY
             sock_end.send(request)
-            logging.debug("inviato login")
+            logging.debug("inviato logi")
+        except Exception as e:
+            logging.debug("ERROR on Send " + str(e))
+
+    ## metodo che data una socket di ingresso invia al
+    ## terminale le informazioni per il logout
+    @staticmethod
+    def logout(sock_end):
+        try:
+            request = 'LOGO'
+            request = request + Utility.SessionID
+            sock_end.send(request)
+            logging.debug('inviato logo ' + Utility.SessionID)
         except Exception as e:
             logging.debug("ERROR on Send " + str(e))
 

@@ -135,21 +135,31 @@ class Window(Frame):
         exit()
 
     def print_console(self, mess):
-        self.text_console.insert(END,mess)
+        self.text_console.insert(END,mess+'\n')
 
+    ## evento bottone connessione
     def btn_login_click(self):
-
         sock_end = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
         Request.login(sock_end)
-        Response.login_ack(sock_end)
+        Utility.sessionID = Response.login_ack(sock_end)
         Response.close_socket(sock_end)
-
-        self.status.set("SEI LOGGATO")
+        self.status.set("SEI LOGGATO come " + Utility.sessionID)
         self.print_console("LOGIN")
 
+    ## evento bottone disconnessione
     def btn_logout_click(self):
-        self.status.set("DISCONNESSO")
-        logging.debug("LOGOUT")
+        sock_end = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
+        Request.logout(sock_end)
+        success, n_part = Response.logout_ack(sock_end)
+
+        # se si e' sconnesso
+        if success:
+            self.status.set('DISCONNESSO - PARTI POSSEDUTE: ' + n_part)
+            logging.debug('DISCONNESSO - PARTI POSSEDUTE: ' + n_part)
+        ## altrimenti rimane connesso
+        else:
+            self.stutus.set('FALLIMENTO DISCONNESSIONE - PARTI SCARICATE: ' + n_part)
+            logging.debug('Disconnessione non consentita hai della parti non scaricate da altri')
 
     def btn_ricerca_click(self):
         logging.debug("STAI CERCANDO: "+self.en_ricerca.get())

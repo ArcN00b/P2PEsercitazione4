@@ -22,6 +22,17 @@ class Parser:
         elif command == 'ALGI':
             fields[0] = data[4:20]      # SessionID[16B]
 
+        # Parsing LOGO
+        elif command == 'LOGO':
+            fields[0] = data[4:20]       # SessionID[16B]
+
+        # Parsing ALOG
+        elif command == 'ALGO':
+            fields[0] = data[4:7]       # Num Delete[3B]
+
+        elif command == 'NLOG':
+            fields[0] == data[4:7]      # numero parti scaricate
+
         # Parsing ADFF
         elif command == 'ADFF':
             fields[0] = data[4:20]      # SessionID[16B]
@@ -32,14 +43,6 @@ class Parser:
         elif command == 'DEFF':
             fields[0] = data[4:20]      # SessioID[16B]
             fields[1] = data[20:52]     # MD5[32B]
-
-        # Parsing LOGO
-        elif command == 'LOGO':
-            fields[0] = data[4:20]      # SessionID[16B]
-
-        # Parsing ALOG
-        elif command == 'ALGO':
-            fields[0] = data[4:7]       # Num Delete[3B]
 
         # Parsing QUER
         elif command == 'QUER':
