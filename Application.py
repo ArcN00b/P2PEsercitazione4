@@ -3,8 +3,12 @@
 from tkinter import *
 from tkinter.ttk import Progressbar
 from tkinter.filedialog import askopenfilename
-from MultiServer import *
+#from MultiServer import *
 import logging
+from ManageDB import *
+from Tracker import *
+from Utility import *
+
 
 class Window(Frame):
     def __init__(self, root=None):
@@ -183,15 +187,16 @@ class Window(Frame):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
-    tracker = False
+    tracker = True
+
+    db=ManageDB.ManageDB()
     
     if tracker:
-        tcpServer = MultiServer()
-        tcpServer.start()
+        server=Tracker(db,Utility.MY_IPV4+'|'+Utility.MY_IPV6,Utility.PORT)
+        server.run()
     
     else:
         root = Tk()
         root.geometry("800x600")
         app = Window(root=root)
-
         root.mainloop()

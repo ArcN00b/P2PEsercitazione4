@@ -1,38 +1,26 @@
-import select
+import threading
 import socket
+import struct
+import time
+import select
+from Utility import *
 from Worker import *
-from ManageDB import *
-#from Monitor import *
 
-# Insieme di costanti utilizzate nel progetto
-#TCP_IP4 = '127.0.0.1'  # Con questo ip il bind viene effettuato su tutte le interfacce di rete
-#TCP_IP6 = '::1'  # Con questo ip il bind viene effettuato su tutte le interfacce di rete
+class Tracker(threading.Thread):
 
-TCP_IP4 = '172.30.7.3'
-TCP_IP6 = 'fc00::7:3'
+    def __init__(self, database,ip,porta):
+        # definizione thread del client
+        threading.Thread.__init__(self)
+        self.database=database
+        self.ipv4,self.ipv6=Utility.getIp(ip)
+        self.port=porta
 
-TCP_PORT = 3000
-
-class MultiServer:
-
-    database = None
-    lock = None
-    thread_list = {}
-    server_socket4 = None
-    server_socket6 = None
-
-    def __init__(self):
-        self.database = ManageDB()
-        self.lock = threading.Lock()
-        self.thread_list = {}
-
-    def start(self):
-
+    def run(self):
         # Creo il socket ipv4, imposto l'eventuale riutilizzo, lo assegno all'ip e alla
         try:
             self.server_socket4 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server_socket4.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.server_socket4.bind((TCP_IP4, TCP_PORT))
+            self.server_socket4.bind((self.ipv4, self.port))
 
         # Gestisco l'eventuale exception
         except socket.error as msg:
@@ -43,7 +31,7 @@ class MultiServer:
         try:
             self.server_socket6 = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
             self.server_socket6.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.server_socket6.bind((TCP_IP6, TCP_PORT))
+            self.server_socket6.bind((self.ipv6, self.port))
 
         # Gestisco l'eventuale exception
         except socket.error as msg:
@@ -53,9 +41,8 @@ class MultiServer:
         self.server_socket4.listen(5)
         self.server_socket6.listen(5)
 
-        # Continuo ad eseguire questo codice
+        #Ciclo continuo
         while True:
-
             # Per non rendere accept() bloccante uso l'oggetto select con il metodo select() sui socket messi in ascolto
             print("server in ascolto")
             input_ready, read_ready, error_ready = select.select([self.server_socket4, self.server_socket6], [], [])
@@ -74,6 +61,3 @@ class MultiServer:
                     client_socket6, address6 = self.server_socket6.accept()
                     client_thread = Worker(client_socket6, self.database, self.lock)
                     client_thread.run()
-
-tcpServer = MultiServer()
-tcpServer.start()

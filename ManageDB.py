@@ -28,7 +28,7 @@ class ManageDB:
 
             # Creo la tabella dei packetId e la cancello se esiste
             c.execute("DROP TABLE IF EXISTS PARTS")
-            c.execute("CREATE TABLE PACKETS (MD5 TEXT NOT NULL, SESSIONID TEXT NOT NULL,PART TEXT NOT NULL)")
+            c.execute("CREATE TABLE PARTS (MD5 TEXT NOT NULL, SESSIONID TEXT NOT NULL,PART TEXT NOT NULL)")
 
             # Imposto il tempo di cancellazione dei packets
             self.deleteTime = 10
