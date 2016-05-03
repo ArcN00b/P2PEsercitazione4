@@ -1,10 +1,14 @@
-# In questo file viene definita una classe che definisce metodi utili a gestire il database SQLite di Python
-# Per creare il database, usare il comando da shell: sqlite3 data.db
+# SUPERNODES:   IP          PORT
+# PEERS:        SESSIONID   IP      PORT
+# FILES:        SESSIONID   NAME    MD5
+# PACKETS:      ID      DATE
 
 import sqlite3
-import sys
+import time
 
+# TODO testare i metodi del database
 class ManageDB:
+
     # Metodo che inizializza il database
     def __init__(self):
 
@@ -14,13 +18,20 @@ class ManageDB:
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            # Creo la tabella dei client e la cancello se esiste
-            c.execute("DROP TABLE IF EXISTS CLIENTS;")
-            c.execute("CREATE TABLE CLIENTS (SESSIONID TEXT NOT NULL, IP TEXT NOT NULL, PORT TEXT NOT NULL);")
+            # Creo la tabella dei peer e la cancello se esiste
+            c.execute("DROP TABLE IF EXISTS PEERS")
+            c.execute("CREATE TABLE PEERS (SESSIONID TEXT NOT NULL, IP TEXT NOT NULL, PORT TEXT NOT NULL)")
 
             # Creo la tabella dei file e la cancello se esiste
-            c.execute("DROP TABLE IF EXISTS FILES;")
-            c.execute("CREATE TABLE FILES (NAME TEXT NOT NULL, MD5 TEXT NOT NULL, SESSIONID TEXT NOT NULL, NUMDOWN INTEGER DEFAULT 0);")
+            c.execute("DROP TABLE IF EXISTS FILES")
+            c.execute("CREATE TABLE FILES (SESSIONID TEXT NOT NULL, NAME TEXT NOT NULL, MD5 TEXT NOT NULL, LENFILE TEXT NOT NULL, LENPART TEXT NOT NULL)")
+
+            # Creo la tabella dei packetId e la cancello se esiste
+            c.execute("DROP TABLE IF EXISTS PARTS")
+            c.execute("CREATE TABLE PARTS (MD5 TEXT NOT NULL, SESSIONID TEXT NOT NULL,PART TEXT NOT NULL)")
+
+            # Imposto il tempo di cancellazione dei packets
+            self.deleteTime = 10
 
             conn.commit()
 
@@ -30,8 +41,7 @@ class ManageDB:
             if conn:
                 conn.rollback()
 
-            print("Codice Errore 01 - initialize: %s:" % e.args[0])
-            raise Exception()
+            raise Exception("Errore - init: %s:" % e.args[0])
 
         finally:
 
@@ -39,8 +49,8 @@ class ManageDB:
             if conn:
                 conn.close()
 
-    # Metodo che aggiunge un client che ha fatto il login
-    def addClient(self, sessionId, ip, port):
+    # Metodo che aggiunge un peer
+    def addPeer(self, sessionId, ip, port):
 
         try:
 
@@ -48,8 +58,12 @@ class ManageDB:
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            # Aggiungo il client
-            c.execute("INSERT INTO CLIENTS (SESSIONID, IP, PORT) VALUES (?,?,?)" , (sessionId,ip, port))
+            # Aggiungo il peer se non e' presente
+            c.execute("SELECT COUNT(IP) FROM PEERS WHERE IP=:INDIP AND PORT=:PORTA", {"INDIP": ip, "PORTA": port})
+            count = c.fetchall()
+
+            if(count[0][0] == 0):
+                c.execute("INSERT INTO PEERS (SESSIONID, IP, PORT) VALUES (?,?,?)" , (sessionId, ip, port))
             conn.commit()
 
         except sqlite3.Error as e:
@@ -58,8 +72,7 @@ class ManageDB:
             if conn:
                 conn.rollback()
 
-            print("Codice Errore 02 - addClient: %s:" % e.args[0])
-            raise Exception("Errore")
+            raise Exception("Errore - addPeer: %s:" % e.args[0])
 
         finally:
 
@@ -67,26 +80,19 @@ class ManageDB:
             if conn:
                 conn.close()
 
-    # Metodo che aggiunge un file aggiunto da un client
-    def addFile(self, sessionId, md5, name):
-
+    #Metodo che rimuove un peer dato un sessionId
+    def removePeer(self,sessionId):
         try:
-
             # Creo la connessione al database e creo un cursore ad esso
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            # Controllo se esiste il file
-            c.execute("SELECT COUNT(MD5) FROM FILES WHERE MD5=:COD AND SESSIONID=:ID" , {"COD": md5 , "ID": sessionId})
-            num = c.fetchall()
+            c.execute("SELECT COUNT(SESSIONID) FROM PEERS WHERE SESSIONID=:SID", {"SID": sessionId})
+            count = c.fetchall()
 
-            # Aggiungo  il file se non e' presente
-            if num[0][0] == 0:
-                c.execute("INSERT INTO FILES (NAME, MD5, SESSIONID, NUMDOWN) VALUES (?,?,?,?)" , (name, md5, sessionId, 0))
-
-            # Aggiorno il nome dei file con lo stesso MD5
-            c.execute("UPDATE FILES SET NAME=:NOME WHERE MD5=:COD" , {"NOME": name, "COD": md5} )
-            conn.commit()
+            if count[0][0]!=0:
+                c.execute("DELETE FROM PEERS WHERE SESSIONID=:SID", {"SID": sessionId})
+                conn.commit()
 
         except sqlite3.Error as e:
 
@@ -94,27 +100,90 @@ class ManageDB:
             if conn:
                 conn.rollback()
 
-            print("Codice Errore 03 - addFile: %s:" % e.args[0])
-            raise Exception()
+            raise Exception("Errore - removePeer: %s:" % e.args[0])
 
         finally:
-
             # Chiudo la connessione
             if conn:
                 conn.close()
 
-    # Metodo che elimina il client tramite indirizzo ip
-    def removeClient(self, sessionId):
+    # Metodo che ritorna la lista dei peer
+    def listPeer(self,flag):
+        count=None
+        try:
+            # Connessione
+            conn=sqlite3.connect("data.db")
+            c=conn.cursor()
 
+            if flag==1:
+                c.execute("SELECT * FROM PEERS")
+                count=c.fetchall()
+            elif flag==2:
+                c.execute("SELECT IP,PORT FROM PEERS")
+                count=c.fetchall()
+
+            conn.commit()
+
+        except sqlite3.Error as e:
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
+
+            raise Exception("Errore - listPeer: %s:" % e.args[0])
+        finally:
+            # Chiudo la connessione
+            if conn:
+                conn.close()
+            if count is not None:
+                return count
+
+    # Metodo per trovare un peer
+    def findPeer(self,sessionId,ip,port,flag):
+        count=None
+        try:
+            # Connessione
+            conn=sqlite3.connect("data.db")
+            c=conn.cursor()
+
+            if flag==1:
+                c.execute("SELECT SESSIONID FROM PEERS WHERE IP=:INDIP AND PORT=:PORTA", {"INDIP": ip, "PORTA": port})
+                count = c.fetchall()
+            elif flag==2:
+                c.execute("SELECT IP,PORT FROM PEERS WHERE SESSIONID=:SID", {"SID": sessionId})
+                count = c.fetchall()
+
+            conn.commit()
+
+        except sqlite3.Error as e:
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
+
+            raise Exception("Errore - findPeer: %s:" % e.args[0])
+        finally:
+            # Chiudo la connessione
+            if conn:
+                conn.close()
+            if count is not None:
+                return count
+
+    # Metodo che aggiunge un file
+    def addFile(self,sessionId,fileName,Md5,lenFile,lenPart):
         try:
 
             # Creo la connessione al database e creo un cursore ad esso
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            # Rimuovo il client
-            c.execute("DELETE FROM CLIENTS WHERE SESSIONID = ? " , (sessionId,))
-            conn.commit()
+            # Aggiungo il file se non e' presente
+            c.execute("SELECT * FROM FILES WHERE NAME=:FNAME AND MD5=:M AND SESSIONID=:SID", {"FNAME": fileName, "M": Md5, "SID":sessionId})
+            count = c.fetchall()
+
+            if(len(count)==0):
+                #c.execute("UPDATE FILES SET NAME=:NOME WHERE MD5=:COD" , {"NOME": fileName, "COD": Md5})
+                #conn.commit()
+                c.execute("INSERT INTO FILES (SESSIONID, NAME, MD5,LENFILE,LENPART) VALUES (?,?,?,?,?)" , (sessionId, fileName, Md5,lenFile,lenPart))
+                conn.commit()
 
         except sqlite3.Error as e:
 
@@ -122,8 +191,7 @@ class ManageDB:
             if conn:
                 conn.rollback()
 
-            print("Codice Errore 04 - removeClient: %s:" % e.args[0])
-            raise Exception()
+            raise Exception("Errore - addFile: %s:" % e.args[0])
 
         finally:
 
@@ -131,21 +199,20 @@ class ManageDB:
             if conn:
                 conn.close()
 
-    # Metodo che elimina il file identificato da nome e md5
-    def removeFile(self, md5, sessionId):
-
-        # Il metodo non fa distinzione da chi ha caricato il file
-        # Risulta raro che per errore vada a rimuovere un file caricato da piu' utenti, dato che md5 identifica il file
-
+    # Metodo che rimuove un file
+    def removeFile(self,sessionId,Md5):
         try:
 
             # Creo la connessione al database e creo un cursore ad esso
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            # Rimuovo il file
-            c.execute("DELETE FROM FILES WHERE SESSIONID=:ID AND MD5=:COD" , {"ID": sessionId, "COD": md5} )
-            conn.commit()
+            c.execute("SELECT COUNT(SESSIONID) FROM FILES WHERE SESSIONID=:SID AND MD5=:M", {"SID": sessionId, "M": Md5})
+            count = c.fetchall()
+
+            if count[0][0]!=0:
+                c.execute("DELETE FROM FILES WHERE SESSIONID=:SID AND MD5=:M", {"SID": sessionId, "M": Md5})
+                conn.commit()
 
         except sqlite3.Error as e:
 
@@ -153,8 +220,7 @@ class ManageDB:
             if conn:
                 conn.rollback()
 
-            print("Codice Errore 05 - removeFile: %s:" % e.args[0])
-            raise Exception()
+            raise Exception("Errore - removeFile: %s:" % e.args[0])
 
         finally:
 
@@ -162,18 +228,21 @@ class ManageDB:
             if conn:
                 conn.close()
 
-    # Metodo che elimina tutti i file di un client
-    def removeAllFile(self, sessionId):
-
+    # Metodo che rimuove tutti i file di un sessionId
+    def removeAllFileForSessionId(self,sessionId):
+        count=None
         try:
 
             # Creo la connessione al database e creo un cursore ad esso
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            # Rimuovo tutti i file
-            c.execute("DELETE FROM FILES WHERE SESSIONID=:ID" , {"ID": sessionId} )
-            conn.commit()
+            c.execute("SELECT COUNT(MD5) FROM FILES WHERE SESSIONID=:SID", {"SID": sessionId})
+            count = c.fetchall()
+
+            if (count[0][0]>0):
+                c.execute("DELETE FROM FILES WHERE SESSIONID=:SID", {"SID": sessionId})
+                conn.commit()
 
         except sqlite3.Error as e:
 
@@ -181,48 +250,103 @@ class ManageDB:
             if conn:
                 conn.rollback()
 
-            print("Codice Errore 06 - removeAllFile: %s:" % e.args[0])
-            raise Exception()
+            raise Exception("Errore - removeAllFileForSessionId: %s:" % e.args[0])
 
         finally:
 
             # Chiudo la connessione
             if conn:
                 conn.close()
+            if count is not None:
+                return count[0][0]
 
-    # Metodo per ricercare il client tramite id e port, se flag settato a 1, altrimenti ricerco per id
-    def findClient(self, sessionId, ip, port, flag):
+    # Metodo per avere la lista di file per un sessionID
+    def listFileForSessionId(self,sessionId):
+        count=None
         try:
+            # Connessione
+            conn=sqlite3.connect("data.db")
+            c=conn.cursor()
 
-            # Creo la connessione al database e creo un cursore ad esso
-            conn = sqlite3.connect("data.db")
-            c = conn.cursor()
+            c.execute("SELECT MD5,NAME,LENFILE,LENPART FROM FILES WHERE SESSIONID=:SID",{"SID":sessionId})
+            count=c.fetchall()
 
-            # Cerca il client
-            if flag == '1':
-                c.execute("SELECT SESSIONID FROM CLIENTS WHERE IP=:INDIP AND PORT=:PORTA", {"INDIP": ip, "PORTA": port})
-            else:
-                c.execute("SELECT IP, PORT FROM CLIENTS WHERE SESSIONID = ? " , (sessionId,))
             conn.commit()
 
-            result=c.fetchall()
-            return result
-
-
         except sqlite3.Error as e:
-            #In caso di errore stampo l'errore
-            print ("Codice Errore 07 - findClient: %s:" % e.args[0])
-            raise Exception()
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
 
+            raise Exception("Errore - listFileForSessionId: %s:" % e.args[0])
         finally:
-
             # Chiudo la connessione
             if conn:
                 conn.close()
+            if count is not None:
+                return count
 
+    # Metodo ritorna tutta la tabella files
+    def listFile(self):
+        count=None
+        try:
+            # Connessione
+            conn=sqlite3.connect("data.db")
+            c=conn.cursor()
 
-    # Metodo per ricercare le informazioni del file per md5
-    def findFile(self,md5):
+            c.execute("SELECT * FROM FILES")
+            count=c.fetchall()
+
+            conn.commit()
+
+        except sqlite3.Error as e:
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
+
+            raise Exception("Errore - listFile: %s:" % e.args[0])
+        finally:
+            # Chiudo la connessione
+            if conn:
+                conn.close()
+            if count is not None:
+                return count
+
+    # Metodo per ricerca nome file da sessionId e Md5
+    def findFile(self,sessionId,Md5,name,flag):
+        count=None
+        try:
+            # Connessione
+            conn=sqlite3.connect("data.db")
+            c=conn.cursor()
+
+            if flag == 1:
+                c.execute("SELECT NAME FROM FILES WHERE SESSIONID=:SID AND MD5=:M",{"SID":sessionId,"M":Md5})
+                count=c.fetchall()
+            elif flag == 2:
+                c.execute("SELECT SESSIONID,NAME FROM FILES WHERE MD5=:M",{"M":Md5})
+                count=c.fetchall()
+            elif flag == 3:
+                c.execute("SELECT * FROM FILES WHERE NAME LIKE '%" + name + "%' ")
+                count = c.fetchall()
+
+            conn.commit()
+
+        except sqlite3.Error as e:
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
+
+            raise Exception("Errore - listFileForSessionId: %s:" % e.args[0])
+        finally:
+            # Chiudo la connessione
+            if conn:
+                conn.close()
+            if count is not None:
+                return count
+
+    # Metodo per ricercare l'md5 del file da stringa di ricerca
+    def findMd5(self, name):
         try:
 
             # Creo la connessione al database e creo un cursore ad esso
@@ -230,16 +354,15 @@ class ManageDB:
             c = conn.cursor()
 
             # Cerca il file
-            c.execute("SELECT NAME,SESSIONID FROM FILES WHERE MD5 = ? " , (md5,))
+            c.execute("SELECT MD5,NAME,LENFILE,LENPART FROM FILES WHERE NAME LIKE '%" + name + "%' ")
             conn.commit()
 
             result = c.fetchall()
             return result
 
         except sqlite3.Error as e:
-            #In caso di errore stampo l'errore
-            print ("Codice Errore 08 - findFile: %s:" % e.args[0])
-            raise Exception()
+
+            raise Exception("Errore - findFile: %s:" % e.args[0])
 
         finally:
 
@@ -247,25 +370,29 @@ class ManageDB:
             if conn:
                 conn.close()
 
-    # Metodo per ricercare le informazioni del file per md5
-    def findMd5(self,name):
+    # Metodo per aggiungere un file delle parti alla tabella
+    def addPart(self,Md5,sessionId,parte):
         try:
 
             # Creo la connessione al database e creo un cursore ad esso
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            # Cerca il file
-            c.execute("SELECT DISTINCT MD5 FROM FILES WHERE NAME LIKE '%" + name + "%' ")
+            # Aggiungo il peer se non e' presente
+            c.execute("SELECT * FROM PARTS WHERE MD5=:M AND SESSIONID=:SSID", {"M": Md5, "SSID": sessionId})
+            count = c.fetchall()
+
+            if(len(count)>0):
+                c.execute("INSERT INTO PARTS (MD5, SESSIONID, PART) VALUES (?,?,?)" , (Md5,sessionId, parte))
             conn.commit()
 
-            result = c.fetchall()
-            return result
-
         except sqlite3.Error as e:
-            #In caso di errore stampo l'errore
-            print ("Codice Errore 08 - findFile: %s:" % e.args[0])
-            raise Exception()
+
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
+
+            raise Exception("Errore - addPart: %s:" % e.args[0])
 
         finally:
 
@@ -273,25 +400,28 @@ class ManageDB:
             if conn:
                 conn.close()
 
-    # Metodo per verificare se un file esiste
-    def searchIfExistFile(self,md5,sessionId):
+    # Metodo per rimuovere tutti le parti da sessionId
+    def removePart(self,sessionId):
         try:
 
             # Creo la connessione al database e creo un cursore ad esso
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            # Cerca il file
-            c.execute("SELECT COUNT(MD5) FROM FILES WHERE MD5=:COD AND SESSIONID=:ID" , {"COD": md5 , "ID": sessionId})
-            conn.commit()
+            c.execute("SELECT * FROM PARTS WHERE SESSIONID=:SID AND MD5=:M", {"SID": sessionId})
+            count = c.fetchall()
 
-            result = c.fetchall()
-            return result
+            if len(count)>0:
+                c.execute("DELETE FROM PARTS WHERE SESSIONID=:SID", {"SID": sessionId})
+                conn.commit()
 
         except sqlite3.Error as e:
-            #In caso di errore stampo l'errore
-            print ("Codice Errore 09 - searchIfExistFile: %s:" % e.args[0])
-            raise Exception()
+
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
+
+            raise Exception("Errore - removeParts: %s:" % e.args[0])
 
         finally:
 
@@ -299,227 +429,170 @@ class ManageDB:
             if conn:
                 conn.close()
 
-    # Metodo che ritorna il numero di file presenti con quel md5 o id
-    def numOfFile(self,md5,sessionId,flag):
+    # Metodo per cercare la parte dato un sessionID
+    def findPartForSessionID(self,sessionId):
         try:
 
             # Creo la connessione al database e creo un cursore ad esso
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            # Cerca il file
-            if flag == '1':
-                c.execute("SELECT COUNT(MD5) FROM FILES WHERE MD5 = ? " , (md5,))
-            else:
-                c.execute("SELECT COUNT(MD5) FROM FILES WHERE SESSIONID = ? " , (sessionId,))
+            c.execute("SELECT MD5,PART FROM PARTS WHERE SESSIONID=:SID", {"SID": sessionId})
+            count = c.fetchall()
 
             conn.commit()
 
-            result = c.fetchone()
-            return result
-
         except sqlite3.Error as e:
-            #In caso di errore stampo l'errore
-            print ("Codice Errore 10 - numOfFile: %s:" % e.args[0])
-            raise Exception()
+
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
+
+            raise Exception("Errore - findPartForSessionID: %s:" % e.args[0])
 
         finally:
 
             # Chiudo la connessione
             if conn:
                 conn.close()
+            if count is not None:
+                return count
 
-
-    # Metodo che incrementa il numero di download di un file
-    def addDownload(self,md5,sessionId,inc):
+    # Metodo per cercare una parte dato un md5
+    def findPartForMd5(self,Md5):
         try:
 
             # Creo la connessione al database e creo un cursore ad esso
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            # Prelevo il numero di download
-            c.execute("SELECT NUMDOWN FROM FILES WHERE MD5=:COD " , {"COD": md5})
-            res = c.fetchone()
-            ndown = res[0] + inc
-
-            # Aggiorno ilnumero di download
-            c.execute("UPDATE FILES SET NUMDOWN=:NUM WHERE MD5=:COD" , {"NUM": ndown, "COD": md5})
+            c.execute("SELECT SESSIONID,PART FROM PARTS WHERE MD5=:M", {"M": Md5})
+            count = c.fetchall()
 
             conn.commit()
 
-            return ndown
-
         except sqlite3.Error as e:
-            #In caso di errore stampo l'errore
-            print ("Codice Errore 11 - addDownload: %s:" % e.args[0])
-            raise Exception()
+
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
+
+            raise Exception("Errore - findPartForMd5: %s:" % e.args[0])
 
         finally:
 
             # Chiudo la connessione
             if conn:
                 conn.close()
+            if count is not None:
+                return count
 
-    # Metodo che per visualizzare la lista di utenti connessi
-    def listClient(self):
+    # Ritorna la parte dato un md5 e un sessionId
+    def findPartForMd5AndSessionId(self,SessionId,Md5):
         try:
 
             # Creo la connessione al database e creo un cursore ad esso
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            # Prelevo la lista di client connessi
-            c.execute("SELECT * FROM CLIENTS")
+            c.execute("SELECT PART FROM PARTS WHERE MD5=:M AND SESSIONID=SSID", {"M": Md5,"SSID":SessionId})
+            count = c.fetchall()
+
             conn.commit()
 
-            return c.fetchall()
-
         except sqlite3.Error as e:
-            #In caso di errore stampo l'errore
-            print ("Codice Errore 12 - ListCLients: %s:" % e.args[0])
-            raise Exception()
+
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
+
+            raise Exception("Errore - findPartForMd5AndSessionId: %s:" % e.args[0])
 
         finally:
 
             # Chiudo la connessione
             if conn:
                 conn.close()
-
-    # Metodo che per visualizzare la lista di file registrati
-    def listMD5(self):
-        try:
-
-            # Creo la connessione al database e creo un cursore ad esso
-            conn = sqlite3.connect("data.db")
-            c = conn.cursor()
-
-            # Prelevo la lista di file registrati
-            c.execute("SELECT MD5, SESSIONID, NUMDOWN, NAME FROM FILES")
-            conn.commit()
-
-            return c.fetchall()
-
-        except sqlite3.Error as e:
-            #In caso di errore stampo l'errore
-            print ("Codice Errore 13 - ListMD5: %s:" % e.args[0])
-            raise Exception()
-
-        finally:
-
-            # Chiudo la connessione
-            if conn:
-                conn.close()
-
-    # Metodo che per visualizzare la lista di utenti connessi
-    def topDownload(self):
-        try:
-
-            # Creo la connessione al database e creo un cursore ad esso
-            conn = sqlite3.connect("data.db")
-            c = conn.cursor()
-
-            # Prelevo la lista di client connessi
-            c.execute("SELECT DISTINCT MD5, NAME, NUMDOWN FROM FILES ORDER BY NUMDOWN")
-            conn.commit()
-
-            return c.fetchall()
-
-        except sqlite3.Error as e:
-            #In caso di errore stampo l'errore
-            print ("Codice Errore 14 - mostDownloaded: %s:" % e.args[0])
-            raise Exception()
-
-        finally:
-
-            # Chiudo la connessione
-            if conn:
-                conn.close()
+            if count is not None:
+                return count
 
 
-
+# SUPERNODES:   IP          PORT
+# PEERS:        SESSIONID   IP      PORT
+# FILES:        SESSIONID   NAME    MD5
+# PACKETS:      ID      DATE
 '''
 manager = ManageDB()
 
-# TEST FILE
-manager = ManageDB()
-
-# Aggiungo un file
-manager.addFile("1","123","Test1")
-num = manager.addDownload("123","1",0)
-print("1) Numero download: {0}" .format(num)) #0
-
-print("File presenti")
-all_rows = manager.findFile("123")
+print("Aggiungo Peer")
+manager.addPeer("123", "1.1.1.1", "3000")
+manager.addPeer("456", "1.1.1.2", "3000")
+manager.addPeer("789", "1.1.1.3", "3000")
+print("Lista Peer")
+all_rows = manager.listPeer()
 for row in all_rows:
-    print('{0} : {1}'.format(row[0], row[1]))
+    print('{0} {1} {2}'.format(row[0],row[1],row[2]))
 print("")
 
-# Incremento il numero di download del file inserito
-print("2) Incremento download 5")
-num = manager.addDownload("123","1",5)
-print("3) Numero download: {0}" .format(num)) #5
 
-print("File presenti")
-all_rows = manager.findFile("123")
+print("Aggiungo SuperNodo")
+manager.addSuperNode("10.10.10.10", "80")
+manager.addSuperNode("20.20.20.20", "80")
+print("Lista SuperNodi")
+all_rows = manager.listSuperNode()
 for row in all_rows:
-    print('{0} : {1}'.format(row[0], row[1]))
+    print('{0} {1}'.format(row[0],row[1]))
 print("")
 
-# Cambio il nome del file e incremento i download e incremento i download
-print("4) Cambio nome file esistente da stesso client e incremento i download")
-manager.addFile("1","123","Test2")
-num = manager.addDownload("123","1",5)
-print("5) Numero download: {0}" .format(num)) #10
 
-print("File presenti")
-all_rows = manager.findFile("123")
+print("Metodo findPeer flag 1")
+all_rows = manager.findPeer(0,"1.1.1.3","3000",1)
 for row in all_rows:
-    print('{0} : {1}'.format(row[0], row[1]))
+    print('{0}'.format(row[0]))
 print("")
 
-# Un altro client inserisce lo stesso file e incremento il num di download del file di quel client
-print("6) Cambio nome file esistente da altro client")
-manager.addFile("2","123","Test3")
-num = manager.addDownload("123","2",7)
-print("7) Numero download: {0}" .format(num)) #7
 
-print("File presenti")
-all_rows = manager.findFile("123")
+print("Metodo findPeer flag 2")
+all_rows = manager.findPeer("123",0,0,2)
 for row in all_rows:
-    print('{0} : {1}'.format(row[0], row[1]))
+    print('{0} {1}'.format(row[0],row[1]))
 print("")
 
-# Controllo che il numero di download del primo file inserito non sia cambiato
-print("8) Controllo il numero di download del primo file")
-num = manager.addDownload("123","1",0)
-print("9) Numero download primo file: {0}" .format(num)) #5
-num = manager.addDownload("123","2",0)
-print("9) Numero download secondo file: {0}" .format(num)) #7
+
+print("Aggiungo File")
+manager.addFile("123","pippo","1111")
+manager.addFile("123","pluto","2222")
+manager.addFile("456","pluto2","2222")
+manager.addFile("456","paperino","3333")
+print("Lista File")
+all_rows = manager.listFile()
+for row in all_rows:
+    print('{0} {1} {2}'.format(row[0],row[1],row[2]))
+print("")
+
+
+print("Rimuovo File")
+manager.removeFile("123","2222")
+print("Lista File")
+all_rows = manager.listFile()
+for row in all_rows:
+    print('{0} {1} {2}'.format(row[0],row[1],row[2]))
+print("")
+
+
+print("Lista File da SessionID")
+all_rows = manager.listFileForSessionId("456")
+for row in all_rows:
+    print('{0} {1}'.format(row[0],row[1]))
+print("")
+
+
+print("Rimuovo tutti File da SessionID")
+manager.removeAllFileForSessionId("456")
+print("Lista File")
+all_rows = manager.listFile()
+for row in all_rows:
+    print('{0} {1} {2}'.format(row[0],row[1],row[2]))
+print("")
 '''
-
-'''
-# TEST CLIENT
-manager = ManageDB()
-manager.addClient("1","192.168.0.2","3000")
-
-print ("Test primo findClient: " )
-all_rows = manager.findClient("1", "0", "0", "2")
-for row in all_rows:
-    print('ip: {0}, porta: {1}'.format(row[0], row[1]))
-
-
-print ("Test seondo findClient: " )
-all_rows = manager.findClient("0", "192.168.0.2", "3000", "1")
-for row in all_rows:
-    print('id: {0}'.format(row[0]))
-
-print("Test removeClient")
-manager.removeClient("1")
-all_rows = manager.findClient("1", "0", "0", "2")
-for row in all_rows:
-    print('{0} : {1}'.format(row[0], row[1]))
-'''
-
-
 

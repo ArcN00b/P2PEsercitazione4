@@ -2,15 +2,12 @@ import threading
 import socket
 import struct
 from Parser import *
-from Response import *
 from ManageDB import *
+from Utility import *
 
 
 # Costruttore che inizializza gli attributi del Worker
 class Worker(threading.Thread):
-    client = 0
-    database = None
-    lock = None
 
     # Costruttore che inizializza gli attributi del Worker
     def __init__(self, client, database, lock):
@@ -18,7 +15,6 @@ class Worker(threading.Thread):
         threading.Thread.__init__(self)
         self.client = client
         self.database = database
-        self.lock = lock
 
     # Funzione che lancia il worker e controlla la chiusura improvvisa
     def run(self):
@@ -28,6 +24,7 @@ class Worker(threading.Thread):
             print("errore: ", e)
             if self.lock.acquired():
                 self.lock.release()
+            self.client.shutdown()
             self.client.close()
 
     # Funzione che viene eseguita dal thread Worker
@@ -42,86 +39,140 @@ class Worker(threading.Thread):
         while running and len(data) > 0:
 
             # recupero del comando
-            buffer = data.decode()
+            buffer = data
             command, fields = Parser.parse(buffer)
             # risposta da inviare in modo sincronizzato
             self.lock.acquire()
             resp = ""
+            # TODO modificare che comando eseguire in che caso
 
             # controllo del comando effettuato
             # LOGI
             if command == "LOGI":
-                # recupero ip e porta
-                ipp2p = fields[0]
-                pp2p = fields[1]
+                # Todo da testare
+                msgRet="ALGI"
+                try:
+                    ip=fields[0]
+                    port=fields[1]
+                    dati=self.database.findPeer(None,ip,port,1)
+                    if len(dati)>0:
+                        ssId=dati[0][0]
+                        msgRet=msgRet+ssId
+                    else:
+                        ssId=Utility.generateId(16)
+                        msgRet=msgRet+ssId
+                except:
+                    ssId='0'*16
+                    msgRet=msgRet+ssId
+                finally:
+                    self.client.sendall(msgRet.encode())
 
-                # costruzione della risposta "ALGI"
-                resp = Response.login(self.database, ipp2p, pp2p)
-            # ADDF
-            elif command == "ADDF":
-                # recupero session id
-                sessionID = fields[0]
-                # recupero filemd5
-                fileMD5 = fields[1]
-                # recupero file name
-                fileName = fields[2]
+            elif command == "ALGI":
+                True
+                # Todo da scrivere
 
-                # controllo se l'utente si e' precedentemente loggato
-                if len(self.database.findClient(sessionID, '', '', '2')) != 0:
-                    resp = Response.addFile(self.database, fileMD5, sessionID, fileName)
-                else:
-                    # rispondo con 000 per indicare file non aggiunto
-                    resp = "AADD" + "000"
-            # DELF
-            elif command == "DELF":
-                # recupero sessionID
-                sessionID = fields[0]
-                # recupero del fileMD5
-                fileMD5 = fields[1]
-                # controllo se l'utente si e' precedentemente loggato
-                if len(self.database.findClient(sessionID, '', '', '2')) != 0:
-                    resp = Response.remove(self.database, fileMD5, sessionID)
-                else:
-                    # rispondo con 000 per indicare file non rimosso
-                    resp = "AADD" + "999"
-            # FIND
-            elif command == "FIND":
-                # recupero sessionID
-                sessionID = fields[0]
-                # recupero campo di ricerca
-                campo = fields[1];
-                # controllo se l'utente si e' precedentemente loggato
-                if len(self.database.findClient(sessionID, '', '', '2')) != 0:
-                    resp = Response.search(self.database, campo)
-                else:
-                    # rispondo con 000 se utente non autorizzato
-                    resp = "AFIN" + "000"
-            # DREG
-            elif command == "DREG":
-                # recupero del sessionID
-                sessionID = fields[0]
-                # recupero fileMD5
-                fileMD5 = fields[1]
-                # controllo se l'utente si e' precedentemente loggato
-                if len(self.database.findClient(sessionID, '', '', '2')) != 0:
-                    resp = Response.download(self.database, sessionID, fileMD5)
-                else:
-                    # utente non presente, nessun file scaricato da aggiornare
-                    resp = "ADRE" + "000"
-            # LOGO
+            elif command == "ADDR":
+                # Todo da testare
+                msgRet="AADR"
+                ssId=fields[0]
+                lFile=fields[1]
+                lPart=fields[2]
+                name=fields[3]
+                md5=fields[4]
+                if len(self.database.findPeer(ssId,None,None,2))>0:
+                    a=int(lFile)
+                    b=int(lPart)
+                    if a%b==0:
+                        numPart=a//b
+                    else:
+                        numPart=(a//b)+1
+
+                    if numPart%8==0:
+                        numPart8=numPart//8
+                    else:
+                        numPart8=(numPart//8)+1
+
+                    parte='1'*numPart+'0'*(numPart%8)
+                    Utility.database.addFile(ssId,name,md5,lFile,lPart)
+                    Utility.database.addPart(md5,ssId,parte)
+                    msgRet=msgRet+'{:0>8}'.format(numPart)
+                    self.client.sendall(msgRet.encode())
+
+            elif command == "AADR":
+                True
+                # Todo da Scrivere
+
+            elif command == "LOOK":
+                # Todo da testare
+                msgRet="ALOO"
+                ssId=fields[0]
+                name=fields[1]
+                # controllo se il sessionId è nel database
+                if len(self.database.findPeer(ssId,None,None,2))>0:
+                    dati=self.database.findMd5(name.strip())
+                    msgRet=msgRet+'{:0>3}'.format(len(dati))
+                    for i in range(0,len(dati)):
+                        msgRet=msgRet+dati[i][0] #Aggiungo l'iesimo md5
+                        msgRet=msgRet+dati[i][1]+' '*(100-len(dati[i][1])) #Aggiungo il nome del file
+                        msgRet=msgRet+'{:0>10}'.format(int(dati[i][2])) #Aggiungo la lunghezza del file
+                        msgRet=msgRet+'{:0>6}'.format(int(dati[i][3])) #Aggiungo la lunghezza della parte
+
+                    self.client.sendall(msgRet.encode())
+
+            elif command == "ALOO":
+                True
+                # Todo da scrivere
+
+            elif command == "FCHU":
+                # Todo da testare
+                msgRet="AFCH".encode()
+                ssId=fields[0]
+                md5=fields[1]
+                if len(self.database.findPeer(ssId,None,None,2))>0:
+                    dati=self.database.findPartForMd5(md5)
+                    num=len(dati)
+                    msgRet=msgRet+('{:0>3}'.format(num)).encode()
+                    for i in range(0,num):
+                        datiPeer=self.database.findPeer(dati[i][0])
+                        msgRet=msgRet+datiPeer[0][0].encode()
+                        msgRet=msgRet+datiPeer[0][1].encode()
+                        tmp=Utility.toBytes(dati[i][1],0)
+                        msgRet=msgRet+tmp
+
+                    self.client.sendall(msgRet)
+
+            elif command == "AFCH":
+                True
+                # Todo da scrivere
+
+            elif command == "RETP":
+                True
+                # Todo da scrivere
+
+            elif command == "AREP":
+                True
+                # Todo da scrivere
+
+            elif command == "RPAD":
+                True
+                # Todo da scrivere
+
+            elif command == "APAD":
+                True
+                # TOdo da scrivere
+
             elif command == "LOGO":
-                # recupero sessionID
-                sessionID = fields[0]
-                # controllo se l'utente si e' precedentemente loggato
-                if len(self.database.findClient(sessionID, '', '', '2')) != 0:
-                    resp = Response.logout(self.database, sessionID)
-                else:
-                    # utente non presente nessun file da eliminare
-                    resp = "ALGO" + "000"
+               True
+               # TOdo da scrivere
 
-                # termine del ciclo
-                running = False
-            # se non ricevo niente di valido response va a none
+            elif command == "NLOG":
+                True
+                # Todo da scrivere
+
+            elif command == "ALOG":
+                True
+                # Todo da scrivere
+
             else:
                 resp = None
                 running = False
@@ -141,4 +192,5 @@ class Worker(threading.Thread):
         # chiude la connessione quando non ci sono più dati
         print("Chiusura socket di connessione")
         # chiude il client
+        self.client.shutdown()
         self.client.close()

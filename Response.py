@@ -14,7 +14,6 @@ class Response:
     def login_ack(sock_end):
         try:
             data = sock_end.recv(512)
-            data = data.encode()
             command, fields = Parser.parse(data)
 
             ## ritorno del sessionID
@@ -28,7 +27,6 @@ class Response:
     def logout_ack(sock_end):
         try:
             data = sock_end.recv(512)
-            data = data.encode()
             command, fields = Parser.parse(data)
 
             if command == 'NLOG':
@@ -39,8 +37,55 @@ class Response:
                 return True, n_part_own
 
         except Exception as e:
-            logging.debug("ERROR on Receive " + str(e))
+            logging.debug("ERROR on Receive logout_ack" + str(e))
 
+    ## metodo per ricevere la risposta dalla look
+    ## quindi si riceve 'ALOO'
+    @staticmethod
+    def look_ack(sock_end):
+        try:
+            lista=[]
+            data=sock_end.recv(7)
+            cmd,fields=Parser.parse(data)
+            numMd5=fields[0]
+            for i in range(0,numMd5):
+                dim=148
+                d=sock_end.recv(dim)
+
+                ## ciclo per continuare a ricevere fino ai 148 caratteri
+                while len(d)<dim:
+                    tmp=sock_end.recv(dim-len(d))
+                    d=d+tmp
+
+                ## estrazione delle informazioni
+                md5_i=d[0:32].decode()
+                name=d[32:132].decode()
+                lFile=d[132:142].decode()
+                lPart=d[142:148].decode()
+                name=name.strip(' ')
+
+                ## tupla contenente le informazioni
+                obj= (md5_i,name,lFile,lPart)
+                ## aggiornamento alla lista
+                lista.append(obj)
+
+            return lista
+
+        except Exception as e:
+            logging.debug("ERROR on Receive aloo" + str(e))
+
+    ## metodo per la ricezione dell'aggiunta
+    ## dei file da tracciare al tracker 'AADR'
+    @staticmethod
+    def add_file_ack(sock_end):
+        try:
+            data = sock_end.recv(512)
+            command, fields = Parser.parse(data)
+            num_parts = fields[0]
+            return num_parts
+
+        except Exception as e:
+            logging.debug("ERROR on Receive aadr" + str(e))
 
     ## questo metodo chiude la socket verificando se
     ## effettivamente si riesce a chiudere
