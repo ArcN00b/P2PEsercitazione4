@@ -8,8 +8,6 @@ from Utility import *
 
 # Costruttore che inizializza gli attributi del Worker
 class Worker(threading.Thread):
-    client = 0
-    database = None
 
     # Costruttore che inizializza gli attributi del Worker
     def __init__(self, client, database, lock):

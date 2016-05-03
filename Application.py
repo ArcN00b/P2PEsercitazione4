@@ -163,12 +163,21 @@ class Window(Frame):
 
     def btn_ricerca_click(self):
         logging.debug("STAI CERCANDO: "+self.en_ricerca.get())
+        # prendo il campo di ricerca
+        serch=self.en_ricerca.get().strip(' ')
+        serch=serch+' '*(20-len(serch))
+        # Creo la socket di connessione al tracker
+        sock = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
+        req='LOOK'+Utility.SessionID+serch
+        Request.look(sock,req)
+        # Rimuovo la lista dei file scaricati
         self.list_risultati.delete(0,END)
-        ## simulazione ciclo di ricerca
-        self.risultati = []
-        for i in range(0,20):
-            self.risultati.append("risultato " + self.en_ricerca.get() + str(i))
+        # Leggo la ALOO
+        #  Popolo la lista
+        self.risultati = Response.aloo(sock)
+        Response.close_socket(socket)
 
+        # inserisco tutti gli elementi della lista nella lista nel form
         for value in self.risultati:
             self.list_risultati.insert(END, value)
 

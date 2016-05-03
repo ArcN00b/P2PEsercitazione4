@@ -56,11 +56,20 @@ class Request:
         except Exception as e:
             logging.debug("ERROR on Send " + str(e))
 
+    @staticmethod
+    def look(socket,messaggio):
+        try:
+            socket.send(messaggio)
+            logging.debug("Inviata look")
+        except Exception as e:
+            logging.debug("Errore look "+str(e))
+
     ## questo metodo chiude la socket verificando se
     ## effettivamente si riesce a chiudere
     @staticmethod
     def close_socket(socket_end):
         try:
+            socket_end.shutdown()
             socket_end.close()
         except Exception as e:
             logging.debug("ERROR on Close " + str(e))
