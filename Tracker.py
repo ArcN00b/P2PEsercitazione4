@@ -6,11 +6,12 @@ import select
 from Utility import *
 from Worker import *
 
-class Tracker(threading.Thread):
+#class Tracker(threading.Thread):
+class Tracker():
 
     def __init__(self, database,ip,porta):
         # definizione thread del client
-        threading.Thread.__init__(self)
+        #threading.Thread.__init__(self)
         self.database=database
         self.ipv4,self.ipv6=Utility.getIp(ip)
         self.port=porta

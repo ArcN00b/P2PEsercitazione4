@@ -6,16 +6,20 @@ import socket
 import threading
 
 class Utility:
+    IPv4_TRACKER = "172.030.007.001"
+    IPv6_TRACKER = "fc00:0000:0000:0000:0000:0000:0007:0001"
+    IP_TRACKER = "172.030.007.001|fc00:0000:0000:0000:0000:0000:0007:0001"
 
-    MY_IPV4="172.030.007.001"
-    MY_IPV6="fc00:0000:0000:0000:0000:0000:0007:0001"
+    PORT_TRACKER = 3000
 
-    #MY_IPV4="127.000.000.001"
-    #MY_IPV6="0000:0000:0000:0000:0000:0000:0000:0001"
+    IPV4_MY = "172.030.007.003"
+    IPV6_MY = "fc00:0000:0000:0000:0000:0000:0007:0003"
+    IP_MY = "172.030.007.003|fc00:0000:0000:0000:0000:0000:0007:0003"
 
-    PORT=3000
-    PATHDIR='/home/flavio/Scrivania/File/'
+    PORT_MY = 12345
 
+    ## variabili condivise in piu' parti del programma
+    SessionID = ''
     listFindPeer = []
     listFindFile = []
     listResultFile = []
@@ -26,10 +30,6 @@ class Utility:
     portSuperNodo='' # Indica la porta del SuperNodo a cui il Peer e' collegato
     sessionId='' # Indica il sessionId del Peer
     database = ManageDB.ManageDB()
-
-    #database.addSuperNode("172.030.007.003|fc00:0000:0000:0000:0000:0000:0007:0003","03000")
-    #database.addSuperNode("172.030.007.004|fc00:0000:0000:0000:0000:0000:0007:0004","03000")
-    #database.addSuperNode("172.030.007.002|fc00:0000:0000:0000:0000:0000:0007:0002","03000")
 
     # Metodo per trasformare un vettore di byte nella stringa di bit
     @staticmethod
@@ -99,7 +99,7 @@ class Utility:
             hash.update(buf)
             buf = f.read(4096)
 
-        hash.update(Utility.MY_IPV4+'|'+Utility.MY_IPV6+str(Utility.PORT))
+        hash.update(Utility.IPV4_MY+'|'+Utility.IPV6_MY+str(Utility.PORT_MY))
 
         # Return del digest
         return hash.hexdigest()
