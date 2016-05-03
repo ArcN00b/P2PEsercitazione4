@@ -2,7 +2,6 @@ import threading
 import socket
 import struct
 from Parser import *
-from Response import *
 from ManageDB import *
 from Utility import *
 
