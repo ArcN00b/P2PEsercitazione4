@@ -42,7 +42,7 @@ class Worker(threading.Thread):
         while running and len(data) > 0:
 
             # recupero del comando
-            buffer = data.decode()
+            buffer = data
             command, fields = Parser.parse(buffer)
             # risposta da inviare in modo sincronizzato
             self.lock.acquire()
@@ -52,8 +52,23 @@ class Worker(threading.Thread):
             # controllo del comando effettuato
             # LOGI
             if command == "LOGI":
-                True
-                # TODO da scrivere
+                # Todo da testare
+                msgRet="ALGI"
+                try:
+                    ip=fields[0]
+                    port=fields[1]
+                    dati=self.database.findPeer(None,ip,port,1)
+                    if len(dati)>0:
+                        ssId=dati[0][0]
+                        msgRet=msgRet+ssId
+                    else:
+                        ssId=Utility.generateId(16)
+                        msgRet=msgRet+ssId
+                except:
+                    ssId='0'*16
+                    msgRet=msgRet+ssId
+                finally:
+                    self.client.sendall(msgRet.encode())
 
             elif command == "ALGI":
                 True
@@ -84,7 +99,7 @@ class Worker(threading.Thread):
                     Utility.database.addFile(ssId,name,md5,lFile,lPart)
                     Utility.database.addPart(md5,ssId,parte)
                     msgRet=msgRet+'{:0>8}'.format(numPart)
-                    self.client.sendall(msgRet)
+                    self.client.sendall(msgRet.encode())
 
             elif command == "AADR":
                 True
@@ -150,8 +165,8 @@ class Worker(threading.Thread):
                 # TOdo da scrivere
 
             elif command == "LOGO":
-                True
-                # Todo da scrivere
+               True
+               # TOdo da scrivere
 
             elif command == "NLOG":
                 True

@@ -324,7 +324,7 @@ class ManageDB:
                 c.execute("SELECT NAME FROM FILES WHERE SESSIONID=:SID AND MD5=:M",{"SID":sessionId,"M":Md5})
                 count=c.fetchall()
             elif flag == 2:
-                c.execute("SELECT NAME,SESSIONID FROM FILES WHERE MD5=:M",{"M":Md5})
+                c.execute("SELECT SESSIONID,NAME FROM FILES WHERE MD5=:M",{"M":Md5})
                 count=c.fetchall()
             elif flag == 3:
                 c.execute("SELECT * FROM FILES WHERE NAME LIKE '%" + name + "%' ")
@@ -408,7 +408,7 @@ class ManageDB:
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            c.execute("SELECT * PARTS WHERE SESSIONID=:SID AND MD5=:M", {"SID": sessionId})
+            c.execute("SELECT * FROM PARTS WHERE SESSIONID=:SID AND MD5=:M", {"SID": sessionId})
             count = c.fetchall()
 
             if len(count)>0:
@@ -437,7 +437,7 @@ class ManageDB:
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            c.execute("SELECT MD5,PART PARTS WHERE SESSIONID=:SID", {"SID": sessionId})
+            c.execute("SELECT MD5,PART FROM PARTS WHERE SESSIONID=:SID", {"SID": sessionId})
             count = c.fetchall()
 
             conn.commit()
@@ -466,7 +466,7 @@ class ManageDB:
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            c.execute("SELECT SESSIONID,PART PARTS WHERE MD5=:M", {"M": Md5})
+            c.execute("SELECT SESSIONID,PART FROM PARTS WHERE MD5=:M", {"M": Md5})
             count = c.fetchall()
 
             conn.commit()
@@ -477,7 +477,36 @@ class ManageDB:
             if conn:
                 conn.rollback()
 
-            raise Exception("Errore - findPartForSessionID: %s:" % e.args[0])
+            raise Exception("Errore - findPartForMd5: %s:" % e.args[0])
+
+        finally:
+
+            # Chiudo la connessione
+            if conn:
+                conn.close()
+            if count is not None:
+                return count
+
+    # Ritorna la parte dato un md5 e un sessionId
+    def findPartForMd5AndSessionId(self,SessionId,Md5):
+        try:
+
+            # Creo la connessione al database e creo un cursore ad esso
+            conn = sqlite3.connect("data.db")
+            c = conn.cursor()
+
+            c.execute("SELECT PART FROM PARTS WHERE MD5=:M AND SESSIONID=SSID", {"M": Md5,"SSID":SessionId})
+            count = c.fetchall()
+
+            conn.commit()
+
+        except sqlite3.Error as e:
+
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
+
+            raise Exception("Errore - findPartForMd5AndSessionId: %s:" % e.args[0])
 
         finally:
 
