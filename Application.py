@@ -195,7 +195,7 @@ class Window(Frame):
 
         if path_file != '':
 
-            sock_end = Request.create_socket(Utility.IP_TRACKER + Utility.PORT_TRACKER)
+            sock_end = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
             Request.add_file(sock_end, path_file)
             num_parts = Response.add_file_ack(sock_end)
             Response.close(sock_end)
