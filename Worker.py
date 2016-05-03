@@ -89,10 +89,11 @@ class Worker(threading.Thread):
 
                     if numPart%8==0:
                         numPart8=numPart//8
+                        parte='0'*numPart
                     else:
                         numPart8=(numPart//8)+1
+                        parte='0'*numPart+'0'*(8-(numPart%8))
 
-                    parte='1'*numPart+'0'*(numPart%8)
                     Utility.database.addFile(ssId,name,md5,lFile,lPart)
                     Utility.database.addPart(md5,ssId,parte)
                     msgRet=msgRet+'{:0>8}'.format(numPart)

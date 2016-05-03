@@ -3,6 +3,7 @@
 from Parser import *
 import random
 import logging
+from Utility import *
 
 #Tutti i metodi eseguono le operazioni sul database
 #Necessitano quindi che sia passato il database in ingresso
@@ -41,9 +42,11 @@ class Response:
         except Exception as e:
             logging.debug("ERROR on Receive " + str(e))
 
+    # Metodo per gestire una ALOO
     @staticmethod
     def aloo(socket):
         lista=[]
+        listaAll=[]
         data=socket.recv(7)
         cmd,fields=Parser.parse(data,None)
         numMd5=fields[0]
@@ -59,16 +62,49 @@ class Response:
             lFile=d[132:142].decode()
             lPart=d[142:148].decode()
             name=name.strip(' ')
-            testo=md5_i+' '+name+' '+lFile+' '+lPart
+            testo=md5_i+' '+name
             lista.append(testo)
+            testo=md5_i+'&|&'+name+'&|&'+lFile+'&|&'+lPart
+            listaAll.append(testo)
 
-        return lista
+        return lista,listaAll
+
+    # Metodo per gestire la AFCH
+    @staticmethod
+    def afch(socket,numPart8):
+        listaPeer=[] # E una lista di liste,
+        data=socket.recv(7)
+        cmd,fields=Parser.parse(data,None)
+        numHit=fields[0]
+        for i in range(0,numHit):
+            dim=55+5+numPart8
+            d=socket.recv(dim)
+            while len(d)<dim:
+                tmp=socket.recv(dim-len(d))
+                d=d+tmp
+
+            lista=[]
+            ip_i=d[0:55].decode()
+            port_i=d[55:60].decode()
+            part=d[60:(60+numPart8)]
+            strPart=Utility.toBytes(part)
+            lista.append(ip_i)
+            lista.append(port_i)
+            lista.append(strPart)
+            listaPeer.append(lista)
+
+        return listaPeer
+
+
+
+
 
     ## questo metodo chiude la socket verificando se
     ## effettivamente si riesce a chiudere
     @staticmethod
     def close_socket(sock_end):
         try:
+            sock_end.shutdown()
             sock_end.close()
         except Exception as e:
             logging.debug("ERROR on Close " + str(e))

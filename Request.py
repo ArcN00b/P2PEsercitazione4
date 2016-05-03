@@ -39,7 +39,7 @@ class Request:
         try:
             request = "LOGI"
             request = request + Utility.IP_MY + Utility.PORT_MY
-            sock_end.send(request)
+            sock_end.send(request.encode())
             logging.debug("inviato logi")
         except Exception as e:
             logging.debug("ERROR on Send " + str(e))
@@ -51,18 +51,28 @@ class Request:
         try:
             request = 'LOGO'
             request = request + Utility.SessionID
-            sock_end.send(request)
+            sock_end.send(request.encode())
             logging.debug('inviato logo ' + Utility.SessionID)
         except Exception as e:
             logging.debug("ERROR on Send " + str(e))
 
+    # Metodo che gestisce invia una look
     @staticmethod
     def look(socket,messaggio):
         try:
-            socket.send(messaggio)
+            socket.send(messaggio.encode())
             logging.debug("Inviata look")
         except Exception as e:
             logging.debug("Errore look "+str(e))
+
+    # Metodo che invia un messaggio generico
+    @staticmethod
+    def sendMessagge(socket,messaggio):
+        try:
+            socket.send(messaggio.encode())
+            logging.debug("Inviato msg "+messaggio)
+        except Exception as e:
+            logging.debug("Errore invio messaggio "+str(e))
 
     ## questo metodo chiude la socket verificando se
     ## effettivamente si riesce a chiudere

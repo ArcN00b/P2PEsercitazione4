@@ -379,11 +379,11 @@ class ManageDB:
             c = conn.cursor()
 
             # Aggiungo il peer se non e' presente
-            c.execute("SELECT * FROM PEERS WHERE MD5=:M AND SESSIONID=:SSID", {"M": Md5, "SSID": sessionId})
+            c.execute("SELECT * FROM PARTS WHERE MD5=:M AND SESSIONID=:SSID", {"M": Md5, "SSID": sessionId})
             count = c.fetchall()
 
             if(len(count)>0):
-                c.execute("INSERT INTO PEERS (MD5, SESSIONID, PART) VALUES (?,?,?)" , (Md5,sessionId, parte))
+                c.execute("INSERT INTO PARTS (MD5, SESSIONID, PART) VALUES (?,?,?)" , (Md5,sessionId, parte))
             conn.commit()
 
         except sqlite3.Error as e:
@@ -515,6 +515,32 @@ class ManageDB:
                 conn.close()
             if count is not None:
                 return count
+
+    # Metodo per aggiornare la parte dati sessionId e Md5
+    def updatePart(self,sessionId,md5,part):
+        try:
+
+            # Creo la connessione al database e creo un cursore ad esso
+            conn = sqlite3.connect("data.db")
+            c = conn.cursor()
+
+            c.execute("UPDATE PARTS SET PART=:P WHERE MD5=:M AND SESSIONID=SSID" , {"P": part, "M": md5,"SSID":sessionId} )
+
+            conn.commit()
+
+        except sqlite3.Error as e:
+
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
+
+            raise Exception("Errore - updatePart: %s:" % e.args[0])
+
+        finally:
+
+            # Chiudo la connessione
+            if conn:
+                conn.close()
 
 
 # SUPERNODES:   IP          PORT

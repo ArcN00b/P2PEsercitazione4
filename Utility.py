@@ -20,6 +20,8 @@ class Utility:
 
     ## variabili condivise in piu' parti del programma
     SessionID = ''
+    listLastSerch=[]
+    # Todo controllare se queste variabili vengono usate e nel caso eliminare quelle inutilizzate
     listFindPeer = []
     listFindFile = []
     listResultFile = []
