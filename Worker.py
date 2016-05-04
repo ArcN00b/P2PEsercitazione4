@@ -188,8 +188,8 @@ class Worker(threading.Thread):
                     # Apro il file in lettura e leggo il primo chunk della parte
                     f = open(filename, 'rb')
                     f.seek(partNum * lenPart)
-                    numByte = lenPart - chuncklen
                     r = f.read(chuncklen)
+                    numByte = lenPart - chuncklen
 
                     # Finchè non completo la parte o il file non termina
                     while numByte > 0 or len(r) > 0:
@@ -198,11 +198,11 @@ class Worker(threading.Thread):
                         self.client.sendall(mess + r)
 
                         # Proseguo la lettura del file
-                        numByte -= chuncklen
                         if numByte > chuncklen:
                             r = f.read(chuncklen)
                         else:
                             r = f.read(numByte)
+                        numByte -= chuncklen
                     # Chiudo il file
                     f.close()
 
