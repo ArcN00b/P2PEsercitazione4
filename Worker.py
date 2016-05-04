@@ -212,6 +212,8 @@ class Worker(threading.Thread):
 
                         # Preparo ora il messaggio di ritorno ALOG
                         msgRet = "ALOG" + partOwn.zfill(10)
+
+                        #TODO rimuovere dalla tabella PARTS tutte le occorrenze dove SessionID = ssId
                     else:
                         msgRet = "NLOG" + partDown.zfill(10)
 
