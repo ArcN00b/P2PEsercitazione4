@@ -97,7 +97,7 @@ class Request:
             len_file = os.stat(path_file).st_size
             request='ADDR' + Utility.SessionID
             request = request + len_file.zfill(10) + Utility.LEN_PART.zfill(6)
-            reqeust = request.ljust(100) + md5_file
+            request = request.ljust(100) + md5_file
             sock_end.send(request)
 
         except Exception as e:
