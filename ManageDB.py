@@ -1,7 +1,6 @@
-# SUPERNODES:   IP          PORT
-# PEERS:        SESSIONID   IP      PORT
-# FILES:        SESSIONID   NAME    MD5
-# PACKETS:      ID      DATE
+# PEERS:        SESSIONID   IP          PORT
+# FILES:        SESSIONID   NAME        MD5    LENFILE    LENPART
+# PARTS:        MD5         SESSIONID   PART
 
 import sqlite3
 import time
@@ -241,6 +240,7 @@ class ManageDB:
 
             if (count[0][0]>0):
                 c.execute("DELETE FROM FILES WHERE SESSIONID=:SID", {"SID": sessionId})
+                c.execute("DELETE FROM PARTS WHERE SESSIONID=:SID", {"SID": sessionId})
                 conn.commit()
 
         except sqlite3.Error as e:
@@ -320,7 +320,7 @@ class ManageDB:
             c=conn.cursor()
 
             if flag == 1:
-                c.execute("SELECT NAME FROM FILES WHERE SESSIONID=:SID AND MD5=:M",{"SID":sessionId,"M":Md5})
+                c.execute("SELECT NAME,LENPART FROM FILES WHERE SESSIONID=:SID AND MD5=:M",{"SID":sessionId,"M":Md5})
                 count=c.fetchall()
             elif flag == 2:
                 c.execute("SELECT SESSIONID,NAME FROM FILES WHERE MD5=:M",{"M":Md5})
@@ -330,6 +330,9 @@ class ManageDB:
                 count = c.fetchall()
             elif flag == 4:
                 c.execute("SELECT LENFILE,LENPART FROM FILES WHERE MD5=:M",{"M":Md5})
+                count = c.fetchall()
+            elif flag == 5:
+                c.execute("SELECT SESSIONID FROM FILES WHERE SESSIONID!=SID MD5=:M",{"SID":sessionId,"M": Md5})
                 count = c.fetchall()
 
             conn.commit()

@@ -1,6 +1,7 @@
 import threading
 import socket
 import struct
+import os
 from Parser import *
 from Response import *
 from ManageDB import *
@@ -159,24 +160,154 @@ class Worker(threading.Thread):
                 # Todo da scrivere
 
             elif command == "RETP":
-                True
-                # Todo da scrivere
+                # Todo da testare
+                # Imposto la lunghezza dei chunk e ottengo il nome del file a cui corrisponde l'md5
+                chunklen = 512
+                md5 = fields[0]
+                partNum = fields[1]
+                obj = Utility.database.findFile(Utility.sessionId, md5, None, 1)
+
+                # Ora preparo il file per la lettura
+                if len(obj) > 0:
+
+                    # Controllo se il file è disponibile completamente o a parti
+                    if os.path.isfile(Utility.PATHDIR + str(obj[0][0]).strip()) > 0:
+                        filename = Utility.PATHDIR + str(obj[0][0]).strip()
+                        owned = True    #Se owned = true allora il file è disponibile completamente
+                    else:
+                        filename = Utility.PATHTEMP + str(obj[0][0]).strip() + partNum
+                        owned = False
+
+                    # Calcolo in quanti chunk devo dividere la parte
+                    lenPart = int(obj([0][1]))
+                    num_chunk = lenPart // chunklen
+                    if lenPart % chunklen != 0:
+                        num_chunk = num_chunk + 1
+                    # pad con 0 davanti
+                    num_chunk = str(num_chunk).zfill(6)
+
+                    # costruzione risposta come ARET0000XX
+                    msgRet = ('ARET' + num_chunk).encode()
+                    self.client.sendall(msgRet)
+
+                    # Apro il file in lettura e leggo il primo chunk della parte
+                    f = open(filename, 'rb')
+
+                    # Se il file è completo devo portare avanti l'indice di lettura
+                    if owned:
+                        f.seek(partNum * lenPart)
+
+                    # Leggo la parte intera
+                    r = f.read(lenPart)
+
+                    # Finchè non completo la parte o il file non termina
+                    while len(r) > 0:
+                        
+                        # Aggiungo la lunghezza del chunk e il chunk
+                        mess = str(len(r)).zfill(5).encode()
+                        if len(r) > chunklen:
+                            mess += r[:chunklen]
+                            r = r[chunklen:]
+                        else:
+                            mess += r
+                            r = ''
+
+                        # Invio effettivamente il messaggio
+                        self.client.sendall(mess)
+
+                    # Chiudo il file
+                    f.close()
 
             elif command == "AREP":
                 True
                 # Todo da scrivere
 
             elif command == "RPAD":
-                True
-                # Todo da scrivere
+                # Todo da testare
+
+                # Assegno il contenuto di fields per comodità
+                ssId = fields[0]
+                md5 = fields[1]
+                partNum = int(fields[2])
+
+                # Ottengo la parte dal database modificando il valore in posizione partNum
+                part = Utility.database.findPartForMd5AndSessionId(ssId, md5)
+                tmp = list(part[0][0])
+                tmp = tmp[partNum] = "1"
+                part = "".join(tmp)
+
+                # Conto quante parti ha attualmente il peer e aggiorno il database
+                partOwn = part.coun("1")
+                Utility.database.updatePart(ssId, md5, part)
+
+                # Preparo e invio il messaggio di ritorno
+                msgRet = "APAD" + str(partOwn).zfill(8)
+                self.client.sendall(msgRet.encode())
 
             elif command == "APAD":
                 True
-                # TOdo da scrivere
+                # Todo da scrivere
 
             elif command == "LOGO":
-               True
-               # TOdo da scrivere
+                # Todo da testare
+
+                # Ricavo la lista dei file inerenti al sessionID di chi richiede il logout
+                ssId = fields[0]
+                listFile = Utility.database.listFileForSessionId(ssId) #MD5,NAME,LENFILE,LENPART
+
+                # Se il peer non ha aggiunto file allora posso effettuare logout
+                if(len(listFile) == 0):
+                    msgRet = "ALOG" + '0'.zfill(10)
+                else:
+                    
+                    # Per ciascun file devo controllare che ci siano altri peer che l'hanno scaricato (almeno in parte)
+                    canLogout = True
+                    partDown = 0
+                    for file in listFile:
+                        listSsId = Utility.findFile(ssId, file[0][0], None, 5)
+                            
+                        # Se nessun altro peer ha lo stesso file non posso effettuare il logout
+                        if len(listSsId) == 0:
+                            canLogout = False
+
+                        # Per ciascun peer devo ottenere l'elenco delle parti che possiedono
+                        else:
+                            listParts = []
+                            for peer in listSsId:
+                                tmp = Utility.database.findPartForMd5AndSessionId(peer, file[0][0])
+                                listParts.append(tmp)
+                                        
+                            # Ricavo ora il numero delle parti del file per effettuare il controllo successivo
+                            nParts = file[0][2]//file[0][3]     #file[0][2] = LENFILE
+                            if file[0][2] % file[0][3] != 0:    #file[0][3] = LENPART
+                                nParts += 1
+
+                            # Conto quante parti sono state scaricate almeno una volta (caso NLOG) mi è comodo farlo qui
+                            partDown += Utility.partCounter(listParts, nParts)
+
+                            # Ora devo controllare che tra tutti i peer, il file possa essere disponibile completamente
+                            if not Utility.partChecker(listParts, nParts):
+                                canLogout = False
+                    
+                    # Se si può effettuare il logout allora preparo il messaggio con le parti dei file in possesso
+                    if canLogout:
+                        partOwn = 0
+                        for file in listFile:
+                            tmp = Utility.database.findPartForMd5AndSessionId(peer, file[0][0])
+                            partOwn += tmp.count("1")
+
+                        # Rimuovo i file e le parti del file dal database
+                        Utility.database.removeAllFileForSessionId(ssId)
+
+                        # Preparo ora il messaggio di ritorno ALOG
+                        msgRet = "ALOG" + str(partOwn).zfill(10)
+
+                    # In caso contrario invio le parti effettivamente scaricate dagli altri peer
+                    else:
+                        msgRet = "NLOG" + str(partDown).zfill(10)
+
+                # Invio il messaggio di ritorno
+                self.client.sendall(msgRet.encode())
 
             elif command == "NLOG":
                 True
