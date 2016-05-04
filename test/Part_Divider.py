@@ -31,7 +31,11 @@ if __name__ == '__main__':
         out_file = open(temp_file + '.tmp' + str(i), 'wb')
 
         in_file = open(path_file, 'rb')
-        bytes_readed = in_file.read(Utility.LEN_PART)
+        if i == num_part -1:
+            bytes_readed = in_file.read(len_file - i*Utility.LEN_PART)
+        else:
+            bytes_readed = in_file.read(Utility.LEN_PART)
+        logging.debug(str(i) + ' numero bytes letti: ' + str(len(bytes_readed)))
 
         out_file.write(bytes_readed)
         out_file.flush()

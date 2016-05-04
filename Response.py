@@ -3,6 +3,7 @@
 from Parser import *
 from Utility import *
 import random
+import time
 import logging
 
 #Tutti i metodi eseguono le operazioni sul database
@@ -46,6 +47,7 @@ class Response:
     def look_ack(sock_end):
         try:
             lista=[]
+            listaAll = []
             data=sock_end.recv(7)
             cmd,fields=Parser.parse(data)
             numMd5=fields[0]
@@ -58,22 +60,46 @@ class Response:
                     tmp=sock_end.recv(dim-len(d))
                     d=d+tmp
 
-                ## estrazione delle informazioni
                 md5_i=d[0:32].decode()
                 name=d[32:132].decode()
                 lFile=d[132:142].decode()
                 lPart=d[142:148].decode()
                 name=name.strip(' ')
+                testo=md5_i+' '+name
+                lista.append(testo)
+                testo=md5_i+'&|&'+name+'&|&'+lFile+'&|&'+lPart
+                listaAll.append(testo)
 
-                ## tupla contenente le informazioni
-                obj= (md5_i,name,lFile,lPart)
-                ## aggiornamento alla lista
-                lista.append(obj)
-
-            return lista
+            return lista,listaAll
 
         except Exception as e:
             logging.debug("ERROR on Receive aloo" + str(e))
+
+    # Metodo per gestire la AFCH
+    @staticmethod
+    def fchu_ack(socket,numPart8,numPart):
+        listaPeer=[] # E una lista di liste,
+        data=socket.recv(7)
+        cmd,fields=Parser.parse(data)
+        numHit=fields[0]
+        for i in range(0,numHit):
+            dim=55+5+numPart8
+            d=socket.recv(dim)
+            while len(d)<dim:
+                tmp=socket.recv(dim-len(d))
+                d=d+tmp
+
+            lista=[]
+            ip_i=d[0:55].decode()
+            port_i=d[55:60].decode()
+            part=d[60:(60+numPart8)]
+            strPart=Utility.toBit(part)
+            lista.append(ip_i)
+            lista.append(port_i)
+            lista.append(strPart[0:numPart])
+            listaPeer.append(lista)
+
+        return listaPeer
 
     ## metodo per la ricezione dell'aggiunta
     ## dei file da tracciare al tracker 'AADR'
@@ -88,31 +114,6 @@ class Response:
         except Exception as e:
             logging.debug("ERROR on Receive aadr" + str(e))
 
-    # Metodo per gestire la AFCH
-    @staticmethod
-    def afch(socket,numPart8):
-        listaPeer=[] # E una lista di liste,
-        data=socket.recv(7)
-        cmd,fields=Parser.parse(data,None)
-        numHit=fields[0]
-        for i in range(0,numHit):
-            dim=55+5+numPart8
-            d=socket.recv(dim)
-            while len(d)<dim:
-                tmp=socket.recv(dim-len(d))
-                d=d+tmp
-
-            lista=[]
-            ip_i=d[0:55].decode()
-            port_i=d[55:60].decode()
-            part=d[60:(60+numPart8)]
-            strPart=Utility.toBytes(part)
-            lista.append(ip_i)
-            lista.append(port_i)
-            lista.append(strPart)
-            listaPeer.append(lista)
-
-        return listaPeer
 
     ## questo metodo chiude la socket verificando se
     ## effettivamente si riesce a chiudere
