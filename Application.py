@@ -10,19 +10,20 @@ from Utility import *
 from Communication import *
 import logging
 
+
 class Window(Frame):
     def __init__(self, root=None):
         Frame.__init__(self, root)
         self.root = root
         self.root.title("Torrent")
 
-        #---- costanti controllo posizione ----
+        # ---- costanti controllo posizione ----
         self.larg_bottoni = 8
         self.imb_x = "3m"
         self.imb_y = "2m"
         self.imb_int_x = "3"
         self.imb_int_y = "1m"
-        #---- fine costanti di posizionamento ---
+        # ---- fine costanti di posizionamento ---
 
         self.pack(fill=BOTH, expand=1)
         self.createWidgets()
@@ -38,15 +39,15 @@ class Window(Frame):
         ## associazione azione all'oggetto
         file.add_command(label="Exit", command=self.client_exit)
         ## aggiunta del file al menu
-        menu.add_cascade(label="File", menu = file)
+        menu.add_cascade(label="File", menu=file)
 
         ### quadro login logout
         self.quadro_login = Frame(self, background="white", borderwidth=5, relief=RIDGE, height=10)
-        self.quadro_login.pack(side=TOP, fill=BOTH, ipadx = self.imb_int_x, ipady = self.imb_int_y)
+        self.quadro_login.pack(side=TOP, fill=BOTH, ipadx=self.imb_int_x, ipady=self.imb_int_y)
 
         ## quadro centrale della ricerca
         self.quadro_centrale_ricerca = Frame(self, background="white", borderwidth=5, relief=RIDGE, height=10)
-        self.quadro_centrale_ricerca.pack(side=TOP, fill=BOTH, ipadx = self.imb_int_x, ipady = self.imb_int_y)
+        self.quadro_centrale_ricerca.pack(side=TOP, fill=BOTH, ipadx=self.imb_int_x, ipady=self.imb_int_y)
 
         ## quadro centrale della ricerca
         self.quadro_centrale_file = Frame(self, background="white", borderwidth=5, relief=RIDGE, height=10)
@@ -54,8 +55,7 @@ class Window(Frame):
 
         ## quadro con file caricati
         self.quadro_console = Frame(self, background="white", borderwidth=5, relief=RIDGE, height=10)
-        self.quadro_console.pack(side=TOP, fill=BOTH, ipadx = self.imb_int_x, ipady = self.imb_int_y)
-
+        self.quadro_console.pack(side=TOP, fill=BOTH, ipadx=self.imb_int_x, ipady=self.imb_int_y)
 
         ## ---------------aggiunta dei pulsanti di login e logout------------
         self.btn_login = Button(self.quadro_login, command=self.btn_login_click)
@@ -74,11 +74,15 @@ class Window(Frame):
 
 
         ##------------ quadri di divisione della ricerca e scaricamento-------------
-        self.quadro_sinistro_ricerca = Frame(self.quadro_centrale_ricerca, background="white", borderwidth=5, relief=RIDGE)
-        self.quadro_sinistro_ricerca.pack(side=LEFT, fill=BOTH, expand=1, ipadx = self.imb_int_x, ipady = self.imb_int_y, padx=self.imb_x, pady=self.imb_y)
+        self.quadro_sinistro_ricerca = Frame(self.quadro_centrale_ricerca, background="white", borderwidth=5,
+                                             relief=RIDGE)
+        self.quadro_sinistro_ricerca.pack(side=LEFT, fill=BOTH, expand=1, ipadx=self.imb_int_x, ipady=self.imb_int_y,
+                                          padx=self.imb_x, pady=self.imb_y)
 
-        self.quadro_destro_ricerca = Frame(self.quadro_centrale_ricerca, background="white", borderwidth=5, relief=RIDGE,)
-        self.quadro_destro_ricerca.pack(side=LEFT, fill=BOTH, expand =1, ipadx=self.imb_int_x, ipady=self.imb_int_y, padx=self.imb_x, pady=self.imb_y)
+        self.quadro_destro_ricerca = Frame(self.quadro_centrale_ricerca, background="white", borderwidth=5,
+                                           relief=RIDGE, )
+        self.quadro_destro_ricerca.pack(side=LEFT, fill=BOTH, expand=1, ipadx=self.imb_int_x, ipady=self.imb_int_y,
+                                        padx=self.imb_x, pady=self.imb_y)
 
         ## inserimento widget di ricerca e scaricamento
         self.en_ricerca = Entry(self.quadro_sinistro_ricerca)
@@ -107,10 +111,12 @@ class Window(Frame):
         ##---------------- parte di aggiunta dei file -----------------------------
         ## quadri di divisione per l'aggiunta
         self.quadro_sinistro_file = Frame(self.quadro_centrale_file, background="white", borderwidth=5, relief=RIDGE)
-        self.quadro_sinistro_file.pack(side=LEFT, fill=BOTH, expand=1, ipadx=self.imb_int_x, ipady=self.imb_int_y,padx=self.imb_x, pady=self.imb_y)
+        self.quadro_sinistro_file.pack(side=LEFT, fill=BOTH, expand=1, ipadx=self.imb_int_x, ipady=self.imb_int_y,
+                                       padx=self.imb_x, pady=self.imb_y)
 
         self.quadro_destro_file = Frame(self.quadro_centrale_file, background="white", borderwidth=5, relief=RIDGE)
-        self.quadro_destro_file.pack(side=LEFT, fill=BOTH, expand=1, ipadx=self.imb_int_x, ipady=self.imb_int_y,padx=self.imb_x, pady=self.imb_y)
+        self.quadro_destro_file.pack(side=LEFT, fill=BOTH, expand=1, ipadx=self.imb_int_x, ipady=self.imb_int_y,
+                                     padx=self.imb_x, pady=self.imb_y)
 
         self.lb_file = Label(self.quadro_sinistro_file, text='Gestione dei File', background="white")
         self.lb_file.pack(side=TOP, padx=self.imb_x, pady=self.imb_y)
@@ -136,7 +142,7 @@ class Window(Frame):
         exit()
 
     def print_console(self, mess):
-        self.text_console.insert(END,mess+'\n')
+        self.text_console.insert(END, mess + '\n')
 
     ## evento bottone connessione
     def btn_login_click(self):
@@ -164,17 +170,17 @@ class Window(Frame):
             logging.debug('Disconnessione non consentita hai della parti non scaricate da altri')
 
     def btn_ricerca_click(self):
-        logging.debug("STAI CERCANDO: "+self.en_ricerca.get())
+        logging.debug("STAI CERCANDO: " + self.en_ricerca.get())
 
         if Utility.SessionID != '':
             # prendo il campo di ricerca
-            search=self.en_ricerca.get().strip(' ')
+            search = self.en_ricerca.get().strip(' ')
             # Creo la socket di connessione al tracker
             sock_end = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
-            Request.look(sock_end,search)
+            Request.look(sock_end, search)
 
             # Rimuovo la lista dei file scaricati
-            self.list_risultati.delete(0,END)
+            self.list_risultati.delete(0, END)
             # Azzero la ricerca precedente
             Utility.listLastSerch = []
             #  Popolo la lista
@@ -188,14 +194,14 @@ class Window(Frame):
     def btn_scarica_click(self):
         try:
             # Todo da testare in locale prima
-            #indice elemento da scaricare
+            # indice elemento da scaricare
             index = self.list_risultati.curselection()[0]
             logging.debug("selezionato: " + self.risultati[index])
-            #prendo l'elemento da scaricare
-            info=Utility.listLastSerch[index]
+            # prendo l'elemento da scaricare
+            info = Utility.listLastSerch[index]
 
-            #Classe che esegue il download di un file
-            down=Download(info)
+            # Classe che esegue il download di un file
+            down = Download(info)
             down.run()
             self.prog_scaricamento.start(20)
         except Exception as e:
@@ -205,11 +211,10 @@ class Window(Frame):
         path_file = askopenfilename(initialdir=Utility.PATHDIR)
 
         if path_file != '':
-
             sock_end = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
             Request.add_file(sock_end, path_file)
             num_parts = Response.add_file_ack(sock_end)
-            Response.close(sock_end)
+            Response.close_socket(sock_end)
 
             md5_file = Utility.generateMd5(path_file)
             file_name = path_file.split('/')[-1]
@@ -217,14 +222,14 @@ class Window(Frame):
             self.file_aggiunti.append(elem)
             self.list_file.insert(END, file_name)
 
-            self.print_console('elemento aggiunto: ' + elem)
+            self.print_console('elemento aggiunto: ' + str(elem))
             logging.debug('aggiunto: ' + path_file)
 
     def btn_rimuovi_file_click(self):
         try:
             index = self.list_file.curselection()[0]
             del self.file_aggiunti[index]
-            self.list_file.delete(index,index)
+            self.list_file.delete(index, index)
             logging.debug("rimosso: " + str(index))
         except Exception as e:
             logging.debug("NULLA SELEZIONATO")
@@ -233,9 +238,9 @@ class Window(Frame):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     tracker = False
-    
+
     if tracker:
-        tcpServer = Tracker(Utility.database,Utility.IPv4_TRACKER+'|'+Utility.IPv6_TRACKER,Utility.PORT_TRACKER)
+        tcpServer = Tracker(Utility.database, Utility.IPv4_TRACKER + '|' + Utility.IPv6_TRACKER, Utility.PORT_TRACKER)
         tcpServer.run()
 
     else:
