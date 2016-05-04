@@ -210,10 +210,11 @@ class Worker(threading.Thread):
                             tmp = Utility.database.findPartForMd5AndSessionId(peer, file[0][0])
                             partOwn += tmp.count("1")
 
+                        # Rimuovo i file e le parti del file dal database
+                        Utility.database.removeAllFileForSessionId(ssId)
+
                         # Preparo ora il messaggio di ritorno ALOG
                         msgRet = "ALOG" + partOwn.zfill(10)
-
-                        #TODO rimuovere dalla tabella PARTS tutte le occorrenze dove SessionID = ssId
                     else:
                         msgRet = "NLOG" + partDown.zfill(10)
 

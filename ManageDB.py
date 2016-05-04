@@ -241,6 +241,7 @@ class ManageDB:
 
             if (count[0][0]>0):
                 c.execute("DELETE FROM FILES WHERE SESSIONID=:SID", {"SID": sessionId})
+                c.execute("DELETE FROM PARTS WHERE SESSIONID=:SID", {"SID": sessionId})
                 conn.commit()
 
         except sqlite3.Error as e:
