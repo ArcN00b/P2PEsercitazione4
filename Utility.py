@@ -18,7 +18,12 @@ class Utility:
 
     PORT_MY = 12345
 
+
+    PATHDIR='/home/flavio/Scrivania/File/'
+    PATHTEMP='/home/flavio/Scrivania/File/Temp/'
+
     ## variabili condivise in piu' parti del programma
+    LEN_PART=262144
     SessionID = ''
     listLastSerch=[]
     # Todo controllare se queste variabili vengono usate e nel caso eliminare quelle inutilizzate
@@ -30,21 +35,18 @@ class Utility:
     superNodo=False # Indica se il programma in esecuzione e' un SuperNodo o un Peer
     ipSuperNodo='' # Indica l'ip del SuperNodo a cui il Peer e' collegato
     portSuperNodo='' # Indica la porta del SuperNodo a cui il Peer e' collegato
+    sessionId='' # Indica il sessionId del Peer
     database = ManageDB.ManageDB()
 
     # Metodo per trasformare un vettore di byte nella stringa di bit
     @staticmethod
     def toBit(stringa):
-        if type(stringa) is str:
-            s=bytes(stringa,'utf-8')
-        else:
-            s=stringa
+        s=stringa
         # converto i byte in una stringa
         tmp=''
         for i in range(0,len(s)):
             t=bin(s[i])[2:]
             t='0'*(8-len(t))+t
-            t=t[::-1]
             tmp= tmp+t
 
         return tmp
@@ -61,10 +63,11 @@ class Utility:
         print(n)
         for i in range(0,n):
             s=stringa[(i*8):(i*8+8)]
-            t=s[::-1]
-            s=s.lstrip('0')
-            s=chr(int(t,2))
-            tmp=tmp+bytes(s,'utf-8')
+            #t=s[::-1]
+            #s=s.lstrip('0')
+            a=int(s,2)
+            s=bytes([a])
+            tmp=tmp+s
 
         return tmp
 
@@ -74,6 +77,7 @@ class Utility:
     def generatePort():
         random.seed(time.process_time())
         return random.randrange(1024, 65535)
+
     # Questo metodo genera un packet id randomico
     # Chiede di quanti numeri deve essere il valore generato
     @staticmethod

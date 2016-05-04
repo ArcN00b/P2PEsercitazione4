@@ -1,6 +1,10 @@
 from builtins import print
 
 from Utility import *
+from Request import *
+from Response import *
+import time
+import random
 import threading
 import socket
 
@@ -97,7 +101,7 @@ class Receiver:
 
 class Downloader(threading.Thread):
     # Costruttore che inizializza gli attributi del Worker
-    def __init__(self, ipp2p, pp2p, md5, name):
+    def __init__(self, ipp2p, pp2p, md5, name, part):
         # definizione thread del client
         threading.Thread.__init__(self)
         self.ipp2p = ipp2p
@@ -112,6 +116,7 @@ class Downloader(threading.Thread):
         pp2p = self.pp2p
         md5 = self.md5
         name = self.name
+        part = self.part
 
         r = random.randrange(0,100)
         ipv4, ipv6 = Utility.getIp(ipp2p)
@@ -123,7 +128,7 @@ class Downloader(threading.Thread):
             sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 
         sock.connect((ind, int(pp2p)))
-        mess = 'RETR' + md5
+        mess = 'RETP' + md5 + '{:0>8}'.format(int(part))
         sent = sock.send(mess.encode())
         if sent is None or sent < len(mess):
             print('recupero non effettuato')
@@ -132,12 +137,14 @@ class Downloader(threading.Thread):
 
         # ricevo i primi 10 Byte che sono "ARET" + n_chunk
         recv_mess = sock.recv(10).decode()
-        if recv_mess[:4] == "ARET":
+        if recv_mess[:4] == "AREP":
             num_chunk = int(recv_mess[4:])
             print("Download avviato")
 
             # apro il file per la scrittura
-            f = open(Utility.PATHDIR + name.rstrip(' '), "wb")  # Apro il file rimuovendo gli spazi finali dal nome
+            # Apro il file rimuovendo gli spazi finali dal nome
+            # Aggiungo al nome la parte del file scaricata
+            f = open(Utility.PATHTEMP + name.rstrip(' ') + str(int(part)), "wb")
 
             # Finchè i chunk non sono completi
             print("Download in corso", end='\n')
@@ -166,10 +173,78 @@ class Downloader(threading.Thread):
 
                 f.write(buffer)  # Scrivo il contenuto del chunk nel file
 
+            # Avviso il tracker di aver completato il download della parte del file
+            msgPart = 'RPAD' + Utility.sessionId + md5 + '{:0>8}'.format(int(part))
+            sockTracker = Request(Utility.IP_TRACKER, int(Utility.PORT_TRACKER))
+            sentTracker = sockTracker.send(msgPart.encode())
+            # TODO pensare a come agire in caso di RPAD non inviata correttamente
+            if sentTracker is None or sentTracker < len(msgPart):
+                print('RPAD non riuscita in download')
+                sockTracker.close()
+                return
+
+            # TODO pensare a incongruenze aggiungendo parte al database se non viene avvisato il tracker
+            # TODO inserire il codice di merge in un try catch?
+            # Aggiungo la parte alla lista delle parti nel database
+            strPart = Utility.database.findPartForMd5AndSessionId(Utility.sessionId, md5)
+            strPart[part-1] = '1';
+            Utility.database.updatePart(Utility.sessionId, md5, strPart)
+
+            # Verifico se sono stati scaricati tutti i file e in tal caso eseguo il merge
+            # Verifico se non è presente nessun 0 nella lista delle parti
+            if not('0' in ((Utility.database.findPartForMd5(md5))[0][1])):
+                # Ho tutte le parti ed eseguo il merge di tutte le parti di file
+
+                # Prelevo lenFile e lenPart rispettivamente in row[0][0] e in row[0][1]
+                row = Utility.database.findFile(0,md5,0,4)
+                lenFile = int(row[0][0])
+                lenPart = int(row[0][1])
+
+                #nPart = len((Utility.database.findPartForMd5(md5))[0][1])
+
+                # Calcolo il numero di parti del file: se la divisione non è esatta aggiungo una parte
+                nPart = int( lenFile / lenPart )
+                if( lenFile % lenPart > 0 ):
+                    nPart = nPart + 1
+
+                # Cancello il contenuto del file
+                fCompleto = open(Utility.PATHDIR + name.rstrip(' '), "wb")
+                fCompleto.close()
+
+                # Raggruppo le parti in un unico file
+                for i in range (1,nPart+1):
+
+                    # Aggiungo la parte i-esima in coda al file
+                    fParte = open(Utility.PATHTEMP + name.rstrip(' ') + str(i), "rb")
+                    buffer = fParte.read()
+
+                    # Scrivo all'interno del file e chiudo il file completo
+                    with open(Utility.PATHDIR + name.rstrip(' '), "ab") as myfile:
+                        myfile.write(buffer)
+
+                    # Chiusura del file della parte
+                    fParte.close()
+
+                # Avviso il tracker di avere il file completo
+                msgFile = 'ADDR' + Utility.sessionId + '{:0>10}'.format(lenFile) +  + '{:0>6}'.format(lenPart)
+                sentTracker = sockTracker.send(msgFile.encode())
+                # TODO pensare a come agire in caso di ADDR non inviata correttamente
+                if sentTracker is None or sentTracker < len(msgFile):
+                    print('ADDR non riuscita in download')
+                    sockTracker.close()
+                    return
+
+
+
             f.close()
             print("Download completato")
 
+        sockTracker.shutdown()
+        sockTracker.close()
+        sock.shutdown()
         sock.close()
+
+
 
 class AFinder:
     # Costruttore che inizializza gli attributi del Worker
@@ -217,3 +292,89 @@ class AFinder:
 
                     # Salvo ciò che e stato ricavato in Peer List
                     Utility.listFindPeer.append([buffer[:55].decode(), int(buffer[55:].decode())])
+
+class Download:
+
+    def __init__(self,dati):
+        self.dati=dati
+
+    def run(self):
+        info=self.dati.split('&|&')
+        md5=info[0]
+        name=info[1]
+        lFile=int(info[2])
+        lPart=int(info[3])
+        #Calcolo il numero delle parti
+        if lFile%lPart==0:
+            numPart=lFile//lPart
+        else:
+            numPart=(lFile//lPart)+1
+
+        if numPart%8==0:
+            numPart8=numPart//8
+            #parte='0'*numPart
+        else:
+            numPart8=(numPart//8)+1
+            #parte='0'*numPart+'0'*(8-(numPart%8))
+
+        parte='0'*numPart
+        # aggiungo il file al database
+        Utility.database.addFile(Utility.SessionID,name,md5,lFile,lPart)
+        # aggiungo al database la stringa
+        Utility.database.addPart(md5,Utility.SessionID,parte)
+        partiScaricate=0
+        while partiScaricate!=numPart:
+            sock=Request.create_socket(Utility.IP_TRACKER,Utility.PORT_TRACKER)
+            # Invio messaggio FCHU
+            Request.fchu(sock,Utility.SessionID,md5)
+            # gestisco la risposta dei AFCH, mi ritorna la lista dei peer che hanno fatto match
+            listaPeer=Response.fchu_ack(sock,numPart8,numPart)
+            # Chiudo la socket,non serve tenerla aperta
+            Response.close_socket(sock)
+            #Prendo dal database la situazione delle parti del mio file
+            myPart=Utility.database.findPartForMd5AndSessionId(Utility.SessionID,md5)
+            # Ora seleziono ed elaboro la risposta
+            listaPart=[] # E lista dove per ogni parte memorizzo i peer che ce l'hanno, lista di liste
+            for i in range(0,numPart):
+                if myPart[i]=='0':
+                    lista=[]
+                    for j in range(0,len(listaPeer)):
+                        part=listaPeer[j][2]
+                        lista.append(str(i))
+                        if part[i]=='1':
+                            lista.append(listaPeer[j][0]+'-'+listaPeer[j][1]) # salvo Ip e port separtati da -
+                    listaPart.append(lista)
+            # ordino la lista mettendo all'inizio le parti possedute da meno peer
+            listaPart.sort(key=len)
+            # Prendo i primi 10 o meno
+            numDown=0
+            numDownParalleli=10
+            for i in  range(0,len(listaPart)):
+                # Prendo la parte interessata ed eseguo il download
+                nPeer=len(listaPart[i])-1
+                down=random.randint(0,nPeer-1)
+                datiDown=listaPart[i][down+1]
+                datiDown=datiDown.split('-')
+                parte=int(listaPart[i][0])
+                numDown=numDown+1
+                #Chiamata al download
+                Request.download(datiDown[0],datiDown[1],md5,name,parte)
+                #Controllo se ho gia fatto almeno 10 download
+                if numDown>=numDownParalleli:
+                    break
+
+            # attendo un tempo per rifare la fchu
+            a=time.strftime("%M:%S")
+            a=a.split(':')
+            a=int(a[0])*60+int(a[1])
+            attesa=60 # Secondi di attesa
+            diff=0
+            while diff<attesa:
+                b=time.strftime("%M:%S")
+                b=b.split(':')
+                b=int(b[0])*60+int(b[1])
+                diff=b-a
+
+            #conto il numero di parti scaricate, interrogando il database
+            myPart=Utility.database.findPartForMd5AndSessionId(Utility.SessionID,md5)
+            partiScaricate=myPart.count('1')

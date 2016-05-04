@@ -2,6 +2,7 @@
 
 from Parser import *
 import random
+import time
 import logging
 from Utility import *
 
@@ -44,7 +45,7 @@ class Response:
 
     # Metodo per gestire una ALOO
     @staticmethod
-    def aloo(socket):
+    def look_ack(socket):
         lista=[]
         listaAll=[]
         data=socket.recv(7)
@@ -71,7 +72,7 @@ class Response:
 
     # Metodo per gestire la AFCH
     @staticmethod
-    def afch(socket,numPart8):
+    def fchu_ack(socket,numPart8,numPart):
         listaPeer=[] # E una lista di liste,
         data=socket.recv(7)
         cmd,fields=Parser.parse(data,None)
@@ -87,16 +88,26 @@ class Response:
             ip_i=d[0:55].decode()
             port_i=d[55:60].decode()
             part=d[60:(60+numPart8)]
-            strPart=Utility.toBytes(part)
+            strPart=Utility.toBit(part)
             lista.append(ip_i)
             lista.append(port_i)
-            lista.append(strPart)
+            lista.append(strPart[0:numPart])
             listaPeer.append(lista)
 
         return listaPeer
 
+    ## metodo per la ricezione dell'aggiunta
+    ## dei file da tracciare al tracker 'AADR'
+    @staticmethod
+    def add_file_ack(sock_end):
+        try:
+            data = sock_end.recv(512)
+            command, fields = Parser.parse(data)
+            num_parts = fields[0]
+            return num_parts
 
-
+        except Exception as e:
+            logging.debug("ERROR on Receive aadr" + str(e))
 
 
     ## questo metodo chiude la socket verificando se

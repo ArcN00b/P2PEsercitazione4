@@ -7,6 +7,7 @@ from Tracker import *
 from Request import *
 from Response import *
 from Utility import *
+from Communication import *
 import logging
 
 class Window(Frame):
@@ -151,6 +152,7 @@ class Window(Frame):
         sock_end = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
         Request.logout(sock_end)
         success, n_part = Response.logout_ack(sock_end)
+        Response.close_socket(sock_end)
 
         # se si e' sconnesso
         if success:
@@ -163,21 +165,21 @@ class Window(Frame):
 
     def btn_ricerca_click(self):
         logging.debug("STAI CERCANDO: "+self.en_ricerca.get())
+        # Todo da testare in locale prima
         if Utility.SessionID!='':
             # prendo il campo di ricerca
             serch=self.en_ricerca.get().strip(' ')
-            serch=serch+' '*(20-len(serch))
             # Creo la socket di connessione al tracker
             sock = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
-            req='LOOK'+Utility.SessionID+serch
-            Request.look(sock,req)
+            # Invio richiesta look
+            Request.look(sock,Utility.SessionID,serch)
             # Azzero la ricerca precedente
             Utility.listLastSerch=[]
             # Rimuovo la lista dei file scaricati
             self.list_risultati.delete(0,END)
             # Leggo la ALOO
-            #  Popolo la lista
-            self.risultati,Utility.listLastSerch = Response.aloo(sock)
+            # Popolo la lista globale con i risultati dell'ultima ricerca
+            self.risultati,Utility.listLastSerch = Response.look_ack(sock)
             Response.close_socket(socket)
 
             # inserisco tutti gli elementi della lista nella lista nel form
@@ -186,72 +188,38 @@ class Window(Frame):
 
     def btn_scarica_click(self):
         try:
+            # Todo da testare in locale prima
             #indice elemento da scaricare
             index = self.list_risultati.curselection()[0]
             logging.debug("selezionato: " + self.risultati[index])
             #prendo l'elemento da scaricare
             info=Utility.listLastSerch[index]
-            info=info.split('&|&')
-            md5=info[0]
-            name=info[1]
-            lFile=int(info[2])
-            lPart=int(info[3])
-            #Calcolo il numero delle parti
-            if lFile%lPart==0:
-                numPart=lFile//lPart
-            else:
-                numPart=(lFile//lPart)+1
 
-            if numPart%8==0:
-                numPart8=numPart//8
-                parte='0'*numPart
-            else:
-                numPart8=(numPart//8)+1
-                parte='0'*numPart+'0'*(8-(numPart%8))
-
-            Utility.database.addPart(md5,Utility.SessionID,parte)
-            partiScaricate=0
-            while partiScaricate!=numPart:
-                sock=Request.create_socket(Utility.IP_TRACKER,Utility.PORT_TRACKER)
-                msg='FCHU'+Utility.SessionID+md5
-                Request.sendMessagge(sock,msg)
-                # gestisco la risposta dei AFCH, mi ritorna la lista dei peer che hanno fatto match
-                listaPeer=Response.afch(sock,numPart8)
-                # Chiudo la socket,non serve tenerla aperta
-                Response.close_socket(sock)
-
-                # Ora seleziono ed elaboro la risposta
-                listaPart=[] # E lista dove per ogni parte memorizzo i peer che ce l'hanno, lista di liste
-                for i in range(0,numPart):
-                    lista=[]
-                    for j in range(0,len(listaPeer)):
-                        part=listaPeer[j][2]
-                        if part[i]=='1':
-                            lista.append(listaPeer[j][0]+'-'+listaPeer[j][1]) # salvo Ip e port separtati da -
-                    listaPart.append(lista)
-
-                #ora devo selezionare da chi scaricare cosa, dando priorità a quelli meno disponibili
-
-                # eseguo il download delle parti
-
-                #conto il numero di parti scaricate, interrogando il database
-                part=Utility.database.findPartForMd5AndSessionId(Utility.SessionID,md5)
-                partiScaricate=part.count('1')
-
-
-
+            #Classe che esegue il download di un file
+            down=Download(info)
+            down.run()
             self.prog_scaricamento.start(20)
         except Exception as e:
             logging.debug("NULLA SELEZIONATO")
 
     def btn_aggiungi_file_click(self):
-        file_path = askopenfilename(initialdir="/home/marco/seedfolder/")
-        if file_path != '':
-            self.file_aggiunti.append(file_path)
-            list_name = file_path.split('/')
-            self.list_file.insert(END, list_name[-1])
+        path_file = askopenfilename(initialdir=Utility.PATHDIR)
 
-        logging.debug(file_path)
+        if path_file != '':
+
+            sock_end = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
+            Request.add_file(sock_end, path_file)
+            num_parts = Response.add_file_ack(sock_end)
+            Response.close(sock_end)
+
+            md5_file = Utility.generateMd5(path_file)
+            file_name = path_file.split('/')[-1]
+            elem = (md5_file, file_name, num_parts)
+            self.file_aggiunti.append(elem)
+            self.list_file.insert(END, file_name)
+
+            self.print_console('elemento aggiunto: ' + elem)
+            logging.debug('aggiunto: ' + path_file)
 
     def btn_rimuovi_file_click(self):
         try:

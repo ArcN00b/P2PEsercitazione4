@@ -5,7 +5,6 @@
 import sqlite3
 import time
 
-# TODO testare i metodi del database
 class ManageDB:
 
     # Metodo che inizializza il database
@@ -330,6 +329,9 @@ class ManageDB:
                 c.execute("SELECT * FROM FILES WHERE NAME LIKE '%" + name + "%' ")
                 count = c.fetchall()
             elif flag == 4:
+                c.execute("SELECT LENFILE,LENPART FROM FILES WHERE MD5=:M",{"M":Md5})
+                count = c.fetchall()
+            elif flag == 5:
                 c.execute("SELECT SESSIONID FROM FILES WHERE SESSIONID!=SID MD5=:M",{"SID":sessionId,"M": Md5})
                 count = c.fetchall()
 
@@ -357,7 +359,7 @@ class ManageDB:
             c = conn.cursor()
 
             # Cerca il file
-            c.execute("SELECT MD5,NAME,LENFILE,LENPART FROM FILES WHERE NAME LIKE '%" + name + "%' ")
+            c.execute("SELECT MD5,NAME,LENFILE,LENPART,SESSIONID FROM FILES WHERE NAME LIKE '%" + name + "%' ")
             conn.commit()
 
             result = c.fetchall()
@@ -385,7 +387,7 @@ class ManageDB:
             c.execute("SELECT * FROM PARTS WHERE MD5=:M AND SESSIONID=:SSID", {"M": Md5, "SSID": sessionId})
             count = c.fetchall()
 
-            if(len(count)>0):
+            if(len(count)==0):
                 c.execute("INSERT INTO PARTS (MD5, SESSIONID, PART) VALUES (?,?,?)" , (Md5,sessionId, parte))
             conn.commit()
 
@@ -411,7 +413,7 @@ class ManageDB:
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            c.execute("SELECT * FROM PARTS WHERE SESSIONID=:SID AND MD5=:M", {"SID": sessionId})
+            c.execute("SELECT * FROM PARTS WHERE SESSIONID=:SID", {"SID": sessionId})
             count = c.fetchall()
 
             if len(count)>0:
@@ -527,9 +529,13 @@ class ManageDB:
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            c.execute("UPDATE PARTS SET PART=:P WHERE MD5=:M AND SESSIONID=SSID" , {"P": part, "M": md5,"SSID":sessionId} )
+            # Modifico il peer se non e' presente
+            c.execute("SELECT * FROM PARTS WHERE MD5=:M AND SESSIONID=:SSID", {"M": md5, "SSID": sessionId})
+            count = c.fetchall()
 
-            conn.commit()
+            if(len(count)>0):
+                c.execute("UPDATE PARTS SET PART=:P WHERE MD5=:M AND SESSIONID=:SSID" , {"P": part, "M": md5,"SSID":sessionId} )
+                conn.commit()
 
         except sqlite3.Error as e:
 
@@ -624,4 +630,12 @@ for row in all_rows:
     print('{0} {1} {2}'.format(row[0],row[1],row[2]))
 print("")
 '''
+'''
+m=ManageDB()
+m.addPart('12345','12345','111110001')
+m.addPart('12345','12345','111110001')
+m.updatePart('12345','12345','111111111')
+m.updatePart('123456','12345','111111111')
+m.removePart('12345')
+m.addPart('12345','12345','111110001')'''
 

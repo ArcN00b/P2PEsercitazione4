@@ -1,10 +1,11 @@
 #!/usr/bin/python3
 
 from Utility import *
+from Communication import *
 import socket
 import random
 import logging
-
+import os
 
 class Request:
 
@@ -38,7 +39,7 @@ class Request:
     def login(sock_end):
         try:
             request = "LOGI"
-            request = request + Utility.IP_MY + Utility.PORT_MY
+            request = request + Utility.IP_MY + '{:0>5}'.format(Utility.PORT_MY)
             sock_end.send(request.encode())
             logging.debug("inviato logi")
         except Exception as e:
@@ -58,12 +59,24 @@ class Request:
 
     # Metodo che gestisce invia una look
     @staticmethod
-    def look(socket,messaggio):
+    def look(socket,ssId,serch):
         try:
-            socket.send(messaggio.encode())
+            serch=serch+' '*(20-len(serch))
+            msg='LOOK'+ssId+serch
+            socket.send(msg.encode())
             logging.debug("Inviata look")
         except Exception as e:
             logging.debug("Errore look "+str(e))
+
+    # Metodo che invia una FCHU
+    @staticmethod
+    def fchu(socket,ssid,md5):
+        try:
+            msg="FCHU"+ssid+md5
+            socket.send(msg.encode())
+            logging.debug("Inviata fchu")
+        except Exception as e:
+            logging.debug("Errore fchu "+str(e))
 
     # Metodo che invia un messaggio generico
     @staticmethod
@@ -73,6 +86,23 @@ class Request:
             logging.debug("Inviato msg "+messaggio)
         except Exception as e:
             logging.debug("Errore invio messaggio "+str(e))
+
+    ## metodo che ricevendo il percorso di un file
+    ## estrae la lunghezza e il numero di parti
+    @staticmethod
+    def add_file(sock_end, path_file):
+        try:
+            md5_file = Utility.generateMd5(path_file)
+            file_name = path_file.split('/')[-1]
+            len_file = os.stat(path_file).st_size
+            request='ADDR' + Utility.SessionID
+            request = request + len_file.zfill(10) + Utility.LEN_PART.zfill(6)
+            reqeust = request.ljust(100) + md5_file
+            sock_end.send(request)
+
+        except Exception as e:
+            logging.debug("Error on Send add_file " + str(e))
+
 
     ## questo metodo chiude la socket verificando se
     ## effettivamente si riesce a chiudere
@@ -84,3 +114,14 @@ class Request:
         except Exception as e:
             logging.debug("ERROR on Close " + str(e))
 
+
+    ## questo metodo effettua la richiesta di download
+    ## di un file
+    @staticmethod
+    def download(ip, port, file_Md5,file_name, file_part):
+        try:
+            ts = Downloader(ip, port, file_Md5,file_name, file_part)
+            ts.run()
+
+        except Exception as e:
+            logging.debug("ERROR on Download " + str(e))
