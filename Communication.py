@@ -358,7 +358,7 @@ class Download:
                 parte=int(listaPart[i][0])
                 numDown=numDown+1
                 #Chiamata al download
-                # TODO chiamare il downloader di una parte passare datiDown[0],datiDown[1],md5,name,variabile parte
+                Request.download(datiDown[0],datiDown[1],md5,name,parte)
                 #Controllo se ho gia fatto almeno 10 download
                 if numDown>=numDownParalleli:
                     break
