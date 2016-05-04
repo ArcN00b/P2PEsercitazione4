@@ -135,4 +135,3 @@ class Request:
 
         except Exception as e:
             logging.debug("ERROR on Download " + str(e))
-
