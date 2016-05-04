@@ -320,7 +320,7 @@ class ManageDB:
             c=conn.cursor()
 
             if flag == 1:
-                c.execute("SELECT NAME FROM FILES WHERE SESSIONID=:SID AND MD5=:M",{"SID":sessionId,"M":Md5})
+                c.execute("SELECT NAME,LENPART FROM FILES WHERE SESSIONID=:SID AND MD5=:M",{"SID":sessionId,"M":Md5})
                 count=c.fetchall()
             elif flag == 2:
                 c.execute("SELECT SESSIONID,NAME FROM FILES WHERE MD5=:M",{"M":Md5})
