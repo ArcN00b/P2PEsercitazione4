@@ -101,7 +101,7 @@ class Receiver:
 
 class Downloader(threading.Thread):
     # Costruttore che inizializza gli attributi del Worker
-    def __init__(self, ipp2p, pp2p, md5, name):
+    def __init__(self, ipp2p, pp2p, md5, name, part):
         # definizione thread del client
         threading.Thread.__init__(self)
         self.ipp2p = ipp2p
@@ -116,6 +116,7 @@ class Downloader(threading.Thread):
         pp2p = self.pp2p
         md5 = self.md5
         name = self.name
+        part = self.part
 
         r = random.randrange(0,100)
         ipv4, ipv6 = Utility.getIp(ipp2p)
@@ -127,7 +128,7 @@ class Downloader(threading.Thread):
             sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 
         sock.connect((ind, int(pp2p)))
-        mess = 'RETR' + md5
+        mess = 'RETP' + md5 + '{:0>8}'.format(int(part))
         sent = sock.send(mess.encode())
         if sent is None or sent < len(mess):
             print('recupero non effettuato')
@@ -136,12 +137,14 @@ class Downloader(threading.Thread):
 
         # ricevo i primi 10 Byte che sono "ARET" + n_chunk
         recv_mess = sock.recv(10).decode()
-        if recv_mess[:4] == "ARET":
+        if recv_mess[:4] == "AREP":
             num_chunk = int(recv_mess[4:])
             print("Download avviato")
 
             # apro il file per la scrittura
-            f = open(Utility.PATHDIR + name.rstrip(' '), "wb")  # Apro il file rimuovendo gli spazi finali dal nome
+            # Apro il file rimuovendo gli spazi finali dal nome
+            # Aggiungo al nome la parte del file scaricata
+            f = open(Utility.PATHTEMP + name.rstrip(' ') + str(int(part)), "wb")
 
             # Finchè i chunk non sono completi
             print("Download in corso", end='\n')
@@ -170,10 +173,78 @@ class Downloader(threading.Thread):
 
                 f.write(buffer)  # Scrivo il contenuto del chunk nel file
 
+            # Avviso il tracker di aver completato il download della parte del file
+            msgPart = 'RPAD' + Utility.sessionId + md5 + '{:0>8}'.format(int(part))
+            sockTracker = Request(Utility.IP_TRACKER, int(Utility.PORT_TRACKER))
+            sentTracker = sockTracker.send(msgPart.encode())
+            # TODO pensare a come agire in caso di RPAD non inviata correttamente
+            if sentTracker is None or sentTracker < len(msgPart):
+                print('RPAD non riuscita in download')
+                sockTracker.close()
+                return
+
+            # TODO pensare a incongruenze aggiungendo parte al database se non viene avvisato il tracker
+            # TODO inserire il codice di merge in un try catch?
+            # Aggiungo la parte alla lista delle parti nel database
+            strPart = Utility.database.findPartForMd5AndSessionId(Utility.sessionId, md5)
+            strPart[part-1] = '1';
+            Utility.database.updatePart(Utility.sessionId, md5, strPart)
+
+            # Verifico se sono stati scaricati tutti i file e in tal caso eseguo il merge
+            # Verifico se non è presente nessun 0 nella lista delle parti
+            if not('0' in ((Utility.database.findPartForMd5(md5))[0][1])):
+                # Ho tutte le parti ed eseguo il merge di tutte le parti di file
+
+                # Prelevo lenFile e lenPart rispettivamente in row[0][0] e in row[0][1]
+                row = Utility.database.findFile(0,md5,0,4)
+                lenFile = int(row[0][0])
+                lenPart = int(row[0][1])
+
+                #nPart = len((Utility.database.findPartForMd5(md5))[0][1])
+
+                # Calcolo il numero di parti del file: se la divisione non è esatta aggiungo una parte
+                nPart = int( lenFile / lenPart )
+                if( lenFile % lenPart > 0 ):
+                    nPart = nPart + 1
+
+                # Cancello il contenuto del file
+                fCompleto = open(Utility.PATHDIR + name.rstrip(' '), "wb")
+                fCompleto.close()
+
+                # Raggruppo le parti in un unico file
+                for i in range (1,nPart+1):
+
+                    # Aggiungo la parte i-esima in coda al file
+                    fParte = open(Utility.PATHTEMP + name.rstrip(' ') + str(i), "rb")
+                    buffer = fParte.read()
+
+                    # Scrivo all'interno del file e chiudo il file completo
+                    with open(Utility.PATHDIR + name.rstrip(' '), "ab") as myfile:
+                        myfile.write(buffer)
+
+                    # Chiusura del file della parte
+                    fParte.close()
+
+                # Avviso il tracker di avere il file completo
+                msgFile = 'ADDR' + Utility.sessionId + '{:0>10}'.format(lenFile) +  + '{:0>6}'.format(lenPart)
+                sentTracker = sockTracker.send(msgFile.encode())
+                # TODO pensare a come agire in caso di ADDR non inviata correttamente
+                if sentTracker is None or sentTracker < len(msgFile):
+                    print('ADDR non riuscita in download')
+                    sockTracker.close()
+                    return
+
+
+
             f.close()
             print("Download completato")
 
+        sockTracker.shutdown()
+        sockTracker.close()
+        sock.shutdown()
         sock.close()
+
+
 
 class AFinder:
     # Costruttore che inizializza gli attributi del Worker

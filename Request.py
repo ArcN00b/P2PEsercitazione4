@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from Utility import *
+from Communication import *
 import socket
 import random
 import logging
@@ -113,3 +114,14 @@ class Request:
         except Exception as e:
             logging.debug("ERROR on Close " + str(e))
 
+
+    ## questo metodo effettua la richiesta di download
+    ## di un file
+    @staticmethod
+    def download(ip, port, file_Md5,file_name, file_part):
+        try:
+            ts = Downloader(ip, port, file_Md5,file_name, file_part)
+            ts.run()
+
+        except Exception as e:
+            logging.debug("ERROR on Download " + str(e))

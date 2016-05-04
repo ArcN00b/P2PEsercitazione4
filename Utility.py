@@ -18,7 +18,9 @@ class Utility:
 
     PORT_MY = 12345
 
-    PATH_DIR='/home/flavio/Scrivania/File/'
+
+    PATHDIR='/home/flavio/Scrivania/File/'
+    PATHTEMP='/home/flavio/Scrivania/File/Temp/'
 
     ## variabili condivise in piu' parti del programma
     LEN_PART=262144
@@ -33,7 +35,7 @@ class Utility:
     superNodo=False # Indica se il programma in esecuzione e' un SuperNodo o un Peer
     ipSuperNodo='' # Indica l'ip del SuperNodo a cui il Peer e' collegato
     portSuperNodo='' # Indica la porta del SuperNodo a cui il Peer e' collegato
-
+    sessionId='' # Indica il sessionId del Peer
     database = ManageDB.ManageDB()
 
     # Metodo per trasformare un vettore di byte nella stringa di bit

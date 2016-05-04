@@ -328,6 +328,9 @@ class ManageDB:
             elif flag == 3:
                 c.execute("SELECT * FROM FILES WHERE NAME LIKE '%" + name + "%' ")
                 count = c.fetchall()
+            elif flag == 4:
+                c.execute("SELECT LENFILE,LENPART FROM FILES WHERE MD5=:M",{"M":Md5})
+                count = c.fetchall()
 
             conn.commit()
 
