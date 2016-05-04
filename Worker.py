@@ -2,12 +2,16 @@ import threading
 import socket
 import struct
 from Parser import *
+from Response import *
 from ManageDB import *
 from Utility import *
 
 
 # Costruttore che inizializza gli attributi del Worker
 class Worker(threading.Thread):
+    client = 0
+    database = None
+    lock = None
 
     # Costruttore che inizializza gli attributi del Worker
     def __init__(self, client, database, lock):
@@ -15,6 +19,7 @@ class Worker(threading.Thread):
         threading.Thread.__init__(self)
         self.client = client
         self.database = database
+        self.lock = lock
 
     # Funzione che lancia il worker e controlla la chiusura improvvisa
     def run(self):

@@ -152,6 +152,7 @@ class Window(Frame):
         sock_end = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
         Request.logout(sock_end)
         success, n_part = Response.logout_ack(sock_end)
+        Response.close_socket(sock_end)
 
         # se si e' sconnesso
         if success:
@@ -200,13 +201,23 @@ class Window(Frame):
             logging.debug("NULLA SELEZIONATO")
 
     def btn_aggiungi_file_click(self):
-        file_path = askopenfilename(initialdir="/home/marco/seedfolder/")
-        if file_path != '':
-            self.file_aggiunti.append(file_path)
-            list_name = file_path.split('/')
-            self.list_file.insert(END, list_name[-1])
+        path_file = askopenfilename(initialdir=Utility.PATHDIR)
 
-        logging.debug(file_path)
+        if path_file != '':
+
+            sock_end = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
+            Request.add_file(sock_end, path_file)
+            num_parts = Response.add_file_ack(sock_end)
+            Response.close(sock_end)
+
+            md5_file = Utility.generateMd5(path_file)
+            file_name = path_file.split('/')[-1]
+            elem = (md5_file, file_name, num_parts)
+            self.file_aggiunti.append(elem)
+            self.list_file.insert(END, file_name)
+
+            self.print_console('elemento aggiunto: ' + elem)
+            logging.debug('aggiunto: ' + path_file)
 
     def btn_rimuovi_file_click(self):
         try:

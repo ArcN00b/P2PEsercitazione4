@@ -96,6 +96,20 @@ class Response:
 
         return listaPeer
 
+    ## metodo per la ricezione dell'aggiunta
+    ## dei file da tracciare al tracker 'AADR'
+    @staticmethod
+    def add_file_ack(sock_end):
+        try:
+            data = sock_end.recv(512)
+            command, fields = Parser.parse(data)
+            num_parts = fields[0]
+            return num_parts
+
+        except Exception as e:
+            logging.debug("ERROR on Receive aadr" + str(e))
+
+
     ## questo metodo chiude la socket verificando se
     ## effettivamente si riesce a chiudere
     @staticmethod

@@ -4,7 +4,7 @@ from Utility import *
 import socket
 import random
 import logging
-
+import os
 
 class Request:
 
@@ -85,6 +85,23 @@ class Request:
             logging.debug("Inviato msg "+messaggio)
         except Exception as e:
             logging.debug("Errore invio messaggio "+str(e))
+
+    ## metodo che ricevendo il percorso di un file
+    ## estrae la lunghezza e il numero di parti
+    @staticmethod
+    def add_file(sock_end, path_file):
+        try:
+            md5_file = Utility.generateMd5(path_file)
+            file_name = path_file.split('/')[-1]
+            len_file = os.stat(path_file).st_size
+            request='ADDR' + Utility.SessionID
+            request = request + len_file.zfill(10) + Utility.LEN_PART.zfill(6)
+            reqeust = request.ljust(100) + md5_file
+            sock_end.send(request)
+
+        except Exception as e:
+            logging.debug("Error on Send add_file " + str(e))
+
 
     ## questo metodo chiude la socket verificando se
     ## effettivamente si riesce a chiudere

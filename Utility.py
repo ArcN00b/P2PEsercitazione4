@@ -21,6 +21,7 @@ class Utility:
     PATH_DIR='/home/flavio/Scrivania/File/'
 
     ## variabili condivise in piu' parti del programma
+    LEN_PART=262144
     SessionID = ''
     listLastSerch=[]
     # Todo controllare se queste variabili vengono usate e nel caso eliminare quelle inutilizzate
@@ -32,6 +33,7 @@ class Utility:
     superNodo=False # Indica se il programma in esecuzione e' un SuperNodo o un Peer
     ipSuperNodo='' # Indica l'ip del SuperNodo a cui il Peer e' collegato
     portSuperNodo='' # Indica la porta del SuperNodo a cui il Peer e' collegato
+
     database = ManageDB.ManageDB()
 
     # Metodo per trasformare un vettore di byte nella stringa di bit
@@ -73,6 +75,7 @@ class Utility:
     def generatePort():
         random.seed(time.process_time())
         return random.randrange(1024, 65535)
+
     # Questo metodo genera un packet id randomico
     # Chiede di quanti numeri deve essere il valore generato
     @staticmethod
