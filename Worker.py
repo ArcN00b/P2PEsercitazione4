@@ -1,6 +1,7 @@
 import threading
 import socket
 import struct
+import os
 from Parser import *
 from Response import *
 from ManageDB import *
@@ -173,21 +174,35 @@ class Worker(threading.Thread):
 
                 # Ora preparo il file per la lettura
                 if len(obj) > 0:
-                    filename = Utility.PATHDIR + str(obj[0][0]).strip()
+
+                    # Controllo se il file è disponibile completamente o meno
+                    if os.path.isfile(Utility.PATHDIR + str(obj[0][0]).strip()) > 0:
+                        filename = Utility.PATHDIR + str(obj[0][0]).strip()
+                        owned = True    #Se owned = true allora il file è disponibile completamente
+                    else:
+                        filename = Utility.PATHTEMP + str(obj[0][0]).strip() + partNum
+                        owned = False
+
+                    # Calcolo in quanti chunk devo dividere la parte
                     lenPart = int(obj([0][1]))
-                    # controllo quante parti va diviso il file
                     num_chunk = lenPart // chunklen
                     if lenPart % chunklen != 0:
                         num_chunk = num_chunk + 1
                     # pad con 0 davanti
                     num_chunk = str(num_chunk).zfill(6)
+
                     # costruzione risposta come ARET0000XX
                     msgRet = ('ARET' + num_chunk).encode()
                     self.client.sendall(msgRet)
 
                     # Apro il file in lettura e leggo il primo chunk della parte
                     f = open(filename, 'rb')
-                    f.seek(partNum * lenPart)
+
+                    # Se il file è completo devo portare avanti l'indice di lettura
+                    if owned:
+                        f.seek(partNum * lenPart)
+
+                    # Leggo la parte intera
                     r = f.read(lenPart)
 
                     # Finchè non completo la parte o il file non termina
