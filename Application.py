@@ -7,6 +7,7 @@ from Tracker import *
 from Request import *
 from Response import *
 from Utility import *
+import random
 import logging
 
 class Window(Frame):
@@ -209,6 +210,9 @@ class Window(Frame):
                 numPart8=(numPart//8)+1
                 parte='0'*numPart+'0'*(8-(numPart%8))
 
+            # aggiungo il file al database
+            Utility.database.addFile(Utility.SessionID,name,md5,lFile,lPart)
+            # aggiungo al database la stringa
             Utility.database.addPart(md5,Utility.SessionID,parte)
             partiScaricate=0
             while partiScaricate!=numPart:
@@ -219,26 +223,40 @@ class Window(Frame):
                 listaPeer=Response.afch(sock,numPart8)
                 # Chiudo la socket,non serve tenerla aperta
                 Response.close_socket(sock)
-
+                #Prendo dal database la situazione delle parti del mio file
+                myPart=Utility.database.findPartForMd5AndSessionId(Utility.SessionID,md5)
                 # Ora seleziono ed elaboro la risposta
                 listaPart=[] # E lista dove per ogni parte memorizzo i peer che ce l'hanno, lista di liste
                 for i in range(0,numPart):
-                    lista=[]
-                    for j in range(0,len(listaPeer)):
-                        part=listaPeer[j][2]
-                        if part[i]=='1':
-                            lista.append(listaPeer[j][0]+'-'+listaPeer[j][1]) # salvo Ip e port separtati da -
-                    listaPart.append(lista)
+                    if myPart[i]=='0':
+                        lista=[]
+                        for j in range(0,len(listaPeer)):
+                            part=listaPeer[j][2]
+                            lista.append('P'+str(i))
+                            if part[i]=='1':
+                                lista.append(listaPeer[j][0]+'-'+listaPeer[j][1]) # salvo Ip e port separtati da -
+                        listaPart.append(lista)
+                # ordino la lista mettendo all'inizio le parti possedute da meno peer
+                listaPart.sort(key=len)
+                # Prendo i primi 10 o meno
+                numDown=0
+                for i in  range(0,len(listaPart)):
+                    # Prendo la parte interessata ed eseguo il download
+                    nPeer=len(listaPart[i])-1
+                    down=random.randint(0,nPeer-1)
+                    datiDown=listaPart[i][down+1]
+                    datiDown=datiDown.split('-')
+                    parte=int((listaPart[i][0])[1:])
+                    numDown=numDown+1
+                    #Chiamata al download
 
-                #ora devo selezionare da chi scaricare cosa, dando priorità a quelli meno disponibili
-
-                # eseguo il download delle parti
+                    #Controllo se ho gia fatto almeno 10 download
+                    if numDown>=10:
+                        break
 
                 #conto il numero di parti scaricate, interrogando il database
-                part=Utility.database.findPartForMd5AndSessionId(Utility.SessionID,md5)
-                partiScaricate=part.count('1')
-
-
+                myPart=Utility.database.findPartForMd5AndSessionId(Utility.SessionID,md5)
+                partiScaricate=myPart.count('1')
 
             self.prog_scaricamento.start(20)
         except Exception as e:

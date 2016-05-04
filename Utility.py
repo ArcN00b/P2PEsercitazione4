@@ -18,6 +18,8 @@ class Utility:
 
     PORT_MY = 12345
 
+    PATH_DIR='/home/flavio/Scrivania/File/'
+
     ## variabili condivise in piu' parti del programma
     SessionID = ''
     listLastSerch=[]

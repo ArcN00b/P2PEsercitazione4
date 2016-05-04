@@ -38,7 +38,7 @@ class Request:
     def login(sock_end):
         try:
             request = "LOGI"
-            request = request + Utility.IP_MY + Utility.PORT_MY
+            request = request + Utility.IP_MY + '{:0>5}'.format(Utility.PORT_MY)
             sock_end.send(request.encode())
             logging.debug("inviato logi")
         except Exception as e:
