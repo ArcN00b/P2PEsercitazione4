@@ -37,16 +37,12 @@ class Utility:
     # Metodo per trasformare un vettore di byte nella stringa di bit
     @staticmethod
     def toBit(stringa):
-        if type(stringa) is str:
-            s=bytes(stringa,'utf-8')
-        else:
-            s=stringa
+        s=stringa
         # converto i byte in una stringa
         tmp=''
         for i in range(0,len(s)):
             t=bin(s[i])[2:]
             t='0'*(8-len(t))+t
-            t=t[::-1]
             tmp= tmp+t
 
         return tmp
@@ -63,10 +59,11 @@ class Utility:
         print(n)
         for i in range(0,n):
             s=stringa[(i*8):(i*8+8)]
-            t=s[::-1]
-            s=s.lstrip('0')
-            s=chr(int(t,2))
-            tmp=tmp+bytes(s,'utf-8')
+            #t=s[::-1]
+            #s=s.lstrip('0')
+            a=int(s,2)
+            s=bytes([a])
+            tmp=tmp+s
 
         return tmp
 

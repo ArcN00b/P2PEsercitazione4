@@ -241,11 +241,12 @@ class Download:
 
         if numPart%8==0:
             numPart8=numPart//8
-            parte='0'*numPart
+            #parte='0'*numPart
         else:
             numPart8=(numPart//8)+1
-            parte='0'*numPart+'0'*(8-(numPart%8))
+            #parte='0'*numPart+'0'*(8-(numPart%8))
 
+        parte='0'*numPart
         # aggiungo il file al database
         Utility.database.addFile(Utility.SessionID,name,md5,lFile,lPart)
         # aggiungo al database la stringa
