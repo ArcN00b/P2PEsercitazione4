@@ -497,7 +497,7 @@ class ManageDB:
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            c.execute("SELECT PART FROM PARTS WHERE MD5=:M AND SESSIONID=SSID", {"M": Md5,"SSID":SessionId})
+            c.execute("SELECT PART FROM PARTS WHERE MD5=:M AND SESSIONID=:SSID", {"M": Md5,"SSID":SessionId})
             count = c.fetchall()
 
             conn.commit()

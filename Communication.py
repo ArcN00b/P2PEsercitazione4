@@ -324,7 +324,7 @@ class Download:
         Utility.database.addPart(md5,Utility.SessionID,parte)
         partiScaricate=0
         while partiScaricate!=numPart:
-            sock=Request.create_socket(Utility.IP_TRACKER,Utility.PORT_TRACKER)
+            sock = Request.create_socket(Utility.IP_TRACKER,Utility.PORT_TRACKER)
             # Invio messaggio FCHU
             Request.fchu(sock,Utility.SessionID,md5)
             # gestisco la risposta dei AFCH, mi ritorna la lista dei peer che hanno fatto match
@@ -378,3 +378,5 @@ class Download:
             #conto il numero di parti scaricate, interrogando il database
             myPart=Utility.database.findPartForMd5AndSessionId(Utility.SessionID,md5)
             partiScaricate=myPart.count('1')
+
+

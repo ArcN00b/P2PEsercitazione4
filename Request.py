@@ -109,7 +109,7 @@ class Request:
     @staticmethod
     def close_socket(socket_end):
         try:
-            socket_end.shutdown()
+            socket_end.shutdown(1)
             socket_end.close()
         except Exception as e:
             logging.debug("ERROR on Close " + str(e))
@@ -125,3 +125,4 @@ class Request:
 
         except Exception as e:
             logging.debug("ERROR on Download " + str(e))
+

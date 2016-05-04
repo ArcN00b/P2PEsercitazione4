@@ -54,11 +54,11 @@ class Tracker():
                 # Il client si è collegato tramite socket IPv4, accetto quindi la sua richiesta avviando il worker
                 if s == self.server_socket4:
                     client_socket4, address4 = self.server_socket4.accept()
-                    client_thread = Worker(client_socket4, self.database, self.lock)
+                    client_thread = Worker(client_socket4, self.database)
                     client_thread.run()
 
                 # Il client si è collegato tramite socket IPv6, accetto quindi la sua richiesta avviando il worker
                 elif s == self.server_socket6:
                     client_socket6, address6 = self.server_socket6.accept()
-                    client_thread = Worker(client_socket6, self.database, self.lock)
+                    client_thread = Worker(client_socket6, self.database)
                     client_thread.run()

@@ -49,9 +49,9 @@ class Response:
         lista=[]
         listaAll=[]
         data=socket.recv(7)
-        cmd,fields=Parser.parse(data,None)
+        cmd,fields=Parser.parse(data)
         numMd5=fields[0]
-        for i in range(0,numMd5):
+        for i in range(0,int(numMd5)):
             dim=148
             d=socket.recv(dim)
             while len(d)<dim:
@@ -75,9 +75,9 @@ class Response:
     def fchu_ack(socket,numPart8,numPart):
         listaPeer=[] # E una lista di liste,
         data=socket.recv(7)
-        cmd,fields=Parser.parse(data,None)
+        cmd,fields=Parser.parse(data)
         numHit=fields[0]
-        for i in range(0,numHit):
+        for i in range(0,int(numHit)):
             dim=55+5+numPart8
             d=socket.recv(dim)
             while len(d)<dim:
@@ -115,7 +115,7 @@ class Response:
     @staticmethod
     def close_socket(sock_end):
         try:
-            sock_end.shutdown()
+            sock_end.shutdown(1)
             sock_end.close()
         except Exception as e:
             logging.debug("ERROR on Close " + str(e))

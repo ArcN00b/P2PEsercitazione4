@@ -14,12 +14,11 @@ class Worker(threading.Thread):
     lock = None
 
     # Costruttore che inizializza gli attributi del Worker
-    def __init__(self, client, database, lock):
+    def __init__(self, client, database):
         # definizione thread del client
         threading.Thread.__init__(self)
         self.client = client
         self.database = database
-        self.lock = lock
 
     # Funzione che lancia il worker e controlla la chiusura improvvisa
     def run(self):
@@ -27,9 +26,7 @@ class Worker(threading.Thread):
             self.comunication()
         except Exception as e:
             print("errore: ", e)
-            if self.lock.acquired():
-                self.lock.release()
-            self.client.shutdown()
+            self.client.shutdown(1)
             self.client.close()
 
     # Funzione che viene eseguita dal thread Worker
@@ -47,7 +44,6 @@ class Worker(threading.Thread):
             buffer = data
             command, fields = Parser.parse(buffer)
             # risposta da inviare in modo sincronizzato
-            self.lock.acquire()
             resp = ""
             # TODO modificare che comando eseguire in che caso
 
@@ -94,12 +90,11 @@ class Worker(threading.Thread):
 
                     if numPart%8==0:
                         numPart8=numPart//8
-                        #parte='1'*numPart
+                        parte='1'*numPart
                     else:
                         numPart8=(numPart//8)+1
-                        #parte='0'*numPart+'0'*(8-(numPart%8))
+                        parte='0'*numPart+'0'*(8-(numPart%8))
 
-                    parte='1'*numPart
                     Utility.database.addFile(ssId,name,md5,lFile,lPart)
                     Utility.database.addPart(md5,ssId,parte)
                     msgRet=msgRet+'{:0>8}'.format(numPart)
@@ -145,11 +140,11 @@ class Worker(threading.Thread):
                     msgp=b''
                     for i in range(0,num):
                         if ssId!=dati[i][0]:
-                            datiPeer=self.database.findPeer(dati[i][0])
+                            datiPeer=self.database.findPeer(dati[i][0],None,None,2)
                             msgp=msgp+datiPeer[0][0].encode()
                             msgp=msgp+datiPeer[0][1].encode()
                             parte=dati[i][1]+'0'*(8-(len(dati[i][1])%8))
-                            tmp=Utility.toBytes(parte,0)
+                            tmp=Utility.toBytes(dati[i][1],0)
                             msgp=msgp+tmp
                         else:
                             num=num-1
@@ -196,7 +191,6 @@ class Worker(threading.Thread):
                 running = False
 
             # invio della risposta creata controllando che sia valida
-            self.lock.release()
             #print(resp+'\r\n')
             if resp is not None:
                 self.client.sendall(resp.encode())
@@ -210,5 +204,5 @@ class Worker(threading.Thread):
         # chiude la connessione quando non ci sono più dati
         print("Chiusura socket di connessione")
         # chiude il client
-        self.client.shutdown()
+        self.client.shutdown(1)
         self.client.close()
