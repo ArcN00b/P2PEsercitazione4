@@ -57,7 +57,7 @@ class Utility:
             n=int(len(stringa)/8)
         else:
             n=num
-        tmp=b''
+        tmp=bytes()
         print(n)
         for i in range(0,n):
             s=stringa[(i*8):(i*8+8)]
@@ -137,3 +137,41 @@ class Utility:
         else:
             return '', ''
 
+    # Metodo che controlla che tutte le parti del file siano presenti almeno in una occorrenza della lista
+    @staticmethod
+    def partChecker(listParts, length):
+        for j in range(0, len(listParts[0][0])):
+
+            # Controllo che sia presente almeno un 1 in posizione "j" tra tutte le righe della lista
+            match = False
+            for i in range(0, len(listParts)):
+                if listParts[i][0][j] == 1:
+                    match = True
+                    break
+
+            # Se non ho trovato un 1 in quella posizione allora ritorno False
+            if not match:
+                return False
+
+        # Ritorno true se complessivamente tutte le parti del file sono disponibili in rete
+        return True
+
+    # Metodo che conta il numero parti con almeno un 1 all'interno della lista
+    @staticmethod
+    def partCounter(listParts, length):
+        count = 0
+        for j in range(0, len(listParts[0][0])):
+
+            # Controllo che sia presente almeno un 1 in posizione "j" tra tutte le righe della lista
+            match = False
+            for i in range(0, len(listParts)):
+                if listParts[i][0][j] == 1:
+                    match = True
+                    break
+
+            # Se ho trovato un 1 in quella posizione allora incremento il contatore
+            if match:
+                count += 1
+
+        # Ritorno il contatore
+        return count

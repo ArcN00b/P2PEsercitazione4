@@ -160,11 +160,63 @@ class Worker(threading.Thread):
 
             elif command == "APAD":
                 True
-                # TOdo da scrivere
+                # Todo da scrivere
 
             elif command == "LOGO":
-               True
-               # TOdo da scrivere
+                # Todo da testare
+
+                # Ricavo la lista dei file inerenti al sessionID di chi richiede il logout
+                ssId = fields[0]
+                listFile = Utility.database.listFileForSessionId(ssId) #MD5,NAME,LENFILE,LENPART
+
+                # Se il peer non ha aggiunto file allora posso effettuare logout
+                if(len(listFile) == 0):
+                    msgRet = "ALOG" + '0'.zfill(10)
+                else:
+                    
+                    # Per ciascun file devo controllare che ci siano altri peer che l'hanno scaricato (almeno in parte)
+                    canLogout = True
+                    partDown = 0
+                    for file in listFile:
+                        listSsId = Utility.findFile(ssId, file[0][0], None, 4)
+                            
+                        # Se nessun altro peer ha lo stesso file non posso effettuare il logout
+                        if len(listSsId) == 0:
+                            canLogout = False
+
+                        # Per ciascun peer devo ottenere l'elenco delle parti che possiedono
+                        else:
+                            listParts = []
+                            for peer in listSsId:
+                                tmp = Utility.database.findPartForMd5AndSessionId(peer, file[0][0])
+                                listParts.append(tmp)
+                                        
+                            # Ricavo ora il numero delle parti del file per effettuare il controllo successivo
+                            nParts = file[0][2]//file[0][3]     #file[0][2] = LENFILE
+                            if file[0][2] % file[0][3] != 0:    #file[0][3] = LENPART
+                                nParts += 1
+
+                            # Conto quante parti sono state scaricate almeno una volta (caso NLOG) mi è comodo farlo qui
+                            partDown += Utility.partCounter(listParts, nParts)
+
+                            # Ora devo controllare che tra tutti i peer, il file possa essere disponibile completamente
+                            if not Utility.partChecker(listParts, nParts):
+                                canLogout = False
+                    
+                    # Se si può effettuare il logout allora preparo il messaggio con le parti dei file in possesso
+                    if canLogout:
+                        partOwn = 0
+                        for file in listFile:
+                            tmp = Utility.database.findPartForMd5AndSessionId(peer, file[0][0])
+                            partOwn += tmp.count("1")
+
+                        # Preparo ora il messaggio di ritorno ALOG
+                        msgRet = "ALOG" + partOwn.zfill(10)
+                    else:
+                        msgRet = "NLOG" + partDown.zfill(10)
+
+                # Invio il messaggio di ritorno
+                self.client.sendall(msgRet.encode())
 
             elif command == "NLOG":
                 True

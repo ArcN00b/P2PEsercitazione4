@@ -1,7 +1,6 @@
-# SUPERNODES:   IP          PORT
-# PEERS:        SESSIONID   IP      PORT
-# FILES:        SESSIONID   NAME    MD5
-# PACKETS:      ID      DATE
+# PEERS:        SESSIONID   IP          PORT
+# FILES:        SESSIONID   NAME        MD5    LENFILE    LENPART
+# PARTS:        MD5         SESSIONID   PART
 
 import sqlite3
 import time
@@ -328,6 +327,9 @@ class ManageDB:
                 count=c.fetchall()
             elif flag == 3:
                 c.execute("SELECT * FROM FILES WHERE NAME LIKE '%" + name + "%' ")
+                count = c.fetchall()
+            elif flag == 4:
+                c.execute("SELECT SESSIONID FROM FILES WHERE SESSIONID!=SID MD5=:M",{"SID":sessionId,"M": Md5})
                 count = c.fetchall()
 
             conn.commit()
