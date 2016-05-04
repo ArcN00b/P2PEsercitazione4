@@ -166,7 +166,7 @@ class Worker(threading.Thread):
             elif command == "RETP":
                 # Todo da testare
                 # Imposto la lunghezza dei chunk e ottengo il nome del file a cui corrisponde l'md5
-                chuncklen = 512
+                chunklen = 512
                 md5 = fields[0]
                 partNum = fields[1]
                 obj = Utility.database.findFile(Utility.sessionId, md5, None, 1)
@@ -176,8 +176,8 @@ class Worker(threading.Thread):
                     filename = Utility.PATHDIR + str(obj[0][0]).strip()
                     lenPart = int(obj([0][1]))
                     # controllo quante parti va diviso il file
-                    num_chunk = lenPart // chuncklen
-                    if lenPart % chuncklen != 0:
+                    num_chunk = lenPart // chunklen
+                    if lenPart % chunklen != 0:
                         num_chunk = num_chunk + 1
                     # pad con 0 davanti
                     num_chunk = str(num_chunk).zfill(6)
@@ -188,21 +188,25 @@ class Worker(threading.Thread):
                     # Apro il file in lettura e leggo il primo chunk della parte
                     f = open(filename, 'rb')
                     f.seek(partNum * lenPart)
-                    r = f.read(chuncklen)
-                    numByte = lenPart - chuncklen
+                    r = f.read(lenPart)
 
                     # Finchè non completo la parte o il file non termina
-                    while numByte > 0 or len(r) > 0:
-                        # Invio la lunghezza del chunk
+                    while len(r) > 0:
+                        
+                        # Aggiungo la lunghezza del chunk al messaggio
                         mess = str(len(r)).zfill(5).encode()
-                        self.client.sendall(mess + r)
-
-                        # Proseguo la lettura del file
-                        if numByte > chuncklen:
-                            r = f.read(chuncklen)
+                        
+                        # Aggiungo il chunk al messaggio
+                        if len(r) > chunklen:
+                            mess += r[:chunklen]
+                            r = r[chunklen:]
                         else:
-                            r = f.read(numByte)
-                        numByte -= chuncklen
+                            mess += r
+                            r = ''
+
+                        # Invio effettivamente il messaggio
+                        self.client.sendall(mess)
+
                     # Chiudo il file
                     f.close()
 
