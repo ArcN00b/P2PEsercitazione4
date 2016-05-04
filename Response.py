@@ -2,6 +2,7 @@
 
 from Parser import *
 import random
+import time
 import logging
 from Utility import *
 
@@ -87,17 +88,13 @@ class Response:
             ip_i=d[0:55].decode()
             port_i=d[55:60].decode()
             part=d[60:(60+numPart8)]
-            strPart=Utility.toBytes(part)
+            strPart=Utility.toBit(part)
             lista.append(ip_i)
             lista.append(port_i)
             lista.append(strPart)
             listaPeer.append(lista)
 
         return listaPeer
-
-
-
-
 
     ## questo metodo chiude la socket verificando se
     ## effettivamente si riesce a chiudere

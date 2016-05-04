@@ -105,18 +105,23 @@ class Worker(threading.Thread):
 
             elif command == "LOOK":
                 # Todo da testare
-                msgRet="ALOO"
                 ssId=fields[0]
                 name=fields[1]
                 # controllo se il sessionId è nel database
                 if len(self.database.findPeer(ssId,None,None,2))>0:
                     dati=self.database.findMd5(name.strip())
-                    msgRet=msgRet+'{:0>3}'.format(len(dati))
+                    numFileMatch=len(dati)
+                    msgp=''
                     for i in range(0,len(dati)):
-                        msgRet=msgRet+dati[i][0] #Aggiungo l'iesimo md5
-                        msgRet=msgRet+dati[i][1]+' '*(100-len(dati[i][1])) #Aggiungo il nome del file
-                        msgRet=msgRet+'{:0>10}'.format(int(dati[i][2])) #Aggiungo la lunghezza del file
-                        msgRet=msgRet+'{:0>6}'.format(int(dati[i][3])) #Aggiungo la lunghezza della parte
+                        if dati[i][4]!=ssId:
+                            msgp=msgp+dati[i][0] #Aggiungo l'iesimo md5
+                            msgp=msgp+dati[i][1]+' '*(100-len(dati[i][1])) #Aggiungo il nome del file
+                            msgp=msgp+'{:0>10}'.format(int(dati[i][2])) #Aggiungo la lunghezza del file
+                            msgp=msgp+'{:0>6}'.format(int(dati[i][3])) #Aggiungo la lunghezza della parte
+                        else:
+                            numFileMatch=numFileMatch-1
+
+                    msgRet="ALOO"+'{:0>3}'.format(numFileMatch)+msgp
 
                     self.client.sendall(msgRet.encode())
 
@@ -126,20 +131,25 @@ class Worker(threading.Thread):
 
             elif command == "FCHU":
                 # Todo da testare
-                msgRet="AFCH".encode()
                 ssId=fields[0]
                 md5=fields[1]
                 if len(self.database.findPeer(ssId,None,None,2))>0:
                     dati=self.database.findPartForMd5(md5)
                     num=len(dati)
-                    msgRet=msgRet+('{:0>3}'.format(num)).encode()
+                    msgp=b''
                     for i in range(0,num):
-                        datiPeer=self.database.findPeer(dati[i][0])
-                        msgRet=msgRet+datiPeer[0][0].encode()
-                        msgRet=msgRet+datiPeer[0][1].encode()
-                        tmp=Utility.toBytes(dati[i][1],0)
-                        msgRet=msgRet+tmp
+                        if ssId!=dati[i][0]:
+                            datiPeer=self.database.findPeer(dati[i][0])
+                            msgp=msgp+datiPeer[0][0].encode()
+                            msgp=msgp+datiPeer[0][1].encode()
+                            tmp=Utility.toBytes(dati[i][1],0)
+                            msgp=msgp+tmp
+                        else:
+                            num=num-1
 
+                    msgRet="AFCH".encode()
+                    msgRet=msgRet+('{:0>3}'.format(num)).encode()
+                    msgRet=msgRet+msgp
                     self.client.sendall(msgRet)
 
             elif command == "AFCH":

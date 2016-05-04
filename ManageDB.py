@@ -6,7 +6,6 @@
 import sqlite3
 import time
 
-# TODO testare i metodi del database
 class ManageDB:
 
     # Metodo che inizializza il database
@@ -354,7 +353,7 @@ class ManageDB:
             c = conn.cursor()
 
             # Cerca il file
-            c.execute("SELECT MD5,NAME,LENFILE,LENPART FROM FILES WHERE NAME LIKE '%" + name + "%' ")
+            c.execute("SELECT MD5,NAME,LENFILE,LENPART,SESSIONID FROM FILES WHERE NAME LIKE '%" + name + "%' ")
             conn.commit()
 
             result = c.fetchall()

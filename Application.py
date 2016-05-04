@@ -7,7 +7,7 @@ from Tracker import *
 from Request import *
 from Response import *
 from Utility import *
-import random
+from Communication import *
 import logging
 
 class Window(Frame):
@@ -167,17 +167,16 @@ class Window(Frame):
         if Utility.SessionID!='':
             # prendo il campo di ricerca
             serch=self.en_ricerca.get().strip(' ')
-            serch=serch+' '*(20-len(serch))
             # Creo la socket di connessione al tracker
             sock = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
-            req='LOOK'+Utility.SessionID+serch
-            Request.look(sock,req)
+            # Invio richiesta look
+            Request.look(sock,Utility.SessionID,serch)
             # Azzero la ricerca precedente
             Utility.listLastSerch=[]
             # Rimuovo la lista dei file scaricati
             self.list_risultati.delete(0,END)
             # Leggo la ALOO
-            #  Popolo la lista
+            # Popolo la lista globale con i risultati dell'ultima ricerca
             self.risultati,Utility.listLastSerch = Response.aloo(sock)
             Response.close_socket(socket)
 
@@ -192,71 +191,10 @@ class Window(Frame):
             logging.debug("selezionato: " + self.risultati[index])
             #prendo l'elemento da scaricare
             info=Utility.listLastSerch[index]
-            info=info.split('&|&')
-            md5=info[0]
-            name=info[1]
-            lFile=int(info[2])
-            lPart=int(info[3])
-            #Calcolo il numero delle parti
-            if lFile%lPart==0:
-                numPart=lFile//lPart
-            else:
-                numPart=(lFile//lPart)+1
 
-            if numPart%8==0:
-                numPart8=numPart//8
-                parte='0'*numPart
-            else:
-                numPart8=(numPart//8)+1
-                parte='0'*numPart+'0'*(8-(numPart%8))
-
-            # aggiungo il file al database
-            Utility.database.addFile(Utility.SessionID,name,md5,lFile,lPart)
-            # aggiungo al database la stringa
-            Utility.database.addPart(md5,Utility.SessionID,parte)
-            partiScaricate=0
-            while partiScaricate!=numPart:
-                sock=Request.create_socket(Utility.IP_TRACKER,Utility.PORT_TRACKER)
-                msg='FCHU'+Utility.SessionID+md5
-                Request.sendMessagge(sock,msg)
-                # gestisco la risposta dei AFCH, mi ritorna la lista dei peer che hanno fatto match
-                listaPeer=Response.afch(sock,numPart8)
-                # Chiudo la socket,non serve tenerla aperta
-                Response.close_socket(sock)
-                #Prendo dal database la situazione delle parti del mio file
-                myPart=Utility.database.findPartForMd5AndSessionId(Utility.SessionID,md5)
-                # Ora seleziono ed elaboro la risposta
-                listaPart=[] # E lista dove per ogni parte memorizzo i peer che ce l'hanno, lista di liste
-                for i in range(0,numPart):
-                    if myPart[i]=='0':
-                        lista=[]
-                        for j in range(0,len(listaPeer)):
-                            part=listaPeer[j][2]
-                            lista.append('P'+str(i))
-                            if part[i]=='1':
-                                lista.append(listaPeer[j][0]+'-'+listaPeer[j][1]) # salvo Ip e port separtati da -
-                        listaPart.append(lista)
-                # ordino la lista mettendo all'inizio le parti possedute da meno peer
-                listaPart.sort(key=len)
-                # Prendo i primi 10 o meno
-                numDown=0
-                for i in  range(0,len(listaPart)):
-                    # Prendo la parte interessata ed eseguo il download
-                    nPeer=len(listaPart[i])-1
-                    down=random.randint(0,nPeer-1)
-                    datiDown=listaPart[i][down+1]
-                    datiDown=datiDown.split('-')
-                    parte=int((listaPart[i][0])[1:])
-                    numDown=numDown+1
-                    #Chiamata al download
-
-                    #Controllo se ho gia fatto almeno 10 download
-                    if numDown>=10:
-                        break
-
-                #conto il numero di parti scaricate, interrogando il database
-                myPart=Utility.database.findPartForMd5AndSessionId(Utility.SessionID,md5)
-                partiScaricate=myPart.count('1')
+            #Classe che esegue il download di un file
+            down=Download(info)
+            down.run()
 
             self.prog_scaricamento.start(20)
         except Exception as e:

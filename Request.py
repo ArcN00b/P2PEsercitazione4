@@ -58,12 +58,24 @@ class Request:
 
     # Metodo che gestisce invia una look
     @staticmethod
-    def look(socket,messaggio):
+    def look(socket,ssId,serch):
         try:
-            socket.send(messaggio.encode())
+            serch=serch+' '*(20-len(serch))
+            msg='LOOK'+ssId+serch
+            socket.send(msg.encode())
             logging.debug("Inviata look")
         except Exception as e:
             logging.debug("Errore look "+str(e))
+
+    # Metodo che invia una FCHU
+    @staticmethod
+    def fchu(socket,ssid,md5):
+        try:
+            msg="FCHU"+ssid+md5
+            socket.send(msg.encode())
+            logging.debug("Inviata fchu")
+        except Exception as e:
+            logging.debug("Errore fchu "+str(e))
 
     # Metodo che invia un messaggio generico
     @staticmethod

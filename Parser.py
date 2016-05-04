@@ -5,7 +5,7 @@ class Parser:
 
     # Metodo statico che si occupa di suddividere i vari campi di data in modo consono
     @staticmethod
-    def parse(data,cod):
+    def parse(data):
 
         # Inizializzo il contenitore dei vari campi
         fields = {}
