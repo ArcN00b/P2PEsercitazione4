@@ -193,10 +193,8 @@ class Worker(threading.Thread):
                     # Finchè non completo la parte o il file non termina
                     while len(r) > 0:
                         
-                        # Aggiungo la lunghezza del chunk al messaggio
+                        # Aggiungo la lunghezza del chunk e il chunk
                         mess = str(len(r)).zfill(5).encode()
-                        
-                        # Aggiungo il chunk al messaggio
                         if len(r) > chunklen:
                             mess += r[:chunklen]
                             r = r[chunklen:]
