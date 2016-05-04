@@ -175,7 +175,7 @@ class Worker(threading.Thread):
                 # Ora preparo il file per la lettura
                 if len(obj) > 0:
 
-                    # Controllo se il file è disponibile completamente o meno
+                    # Controllo se il file è disponibile completamente o a parti
                     if os.path.isfile(Utility.PATHDIR + str(obj[0][0]).strip()) > 0:
                         filename = Utility.PATHDIR + str(obj[0][0]).strip()
                         owned = True    #Se owned = true allora il file è disponibile completamente
