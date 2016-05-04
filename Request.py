@@ -78,6 +78,16 @@ class Request:
         except Exception as e:
             logging.debug("Errore fchu "+str(e))
 
+    # Metodo che invia una RPAD
+    @staticmethod
+    def rpad(socket, ssid, md5, partnum):
+        try:
+            msg = "RPAD" + ssid + md5 + str(partnum).zfill(8)
+            socket.send(msg.encode())
+            logging.debug("Inviata rpad")
+        except Exception as e:
+            logging.debug("Errore rpad " + str(e))
+
     # Metodo che invia un messaggio generico
     @staticmethod
     def sendMessagge(socket,messaggio):

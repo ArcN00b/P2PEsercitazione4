@@ -213,7 +213,7 @@ class Worker(threading.Thread):
                     canLogout = True
                     partDown = 0
                     for file in listFile:
-                        listSsId = Utility.findFile(ssId, file[0][0], None, 4)
+                        listSsId = Utility.findFile(ssId, file[0][0], None, 5)
                             
                         # Se nessun altro peer ha lo stesso file non posso effettuare il logout
                         if len(listSsId) == 0:

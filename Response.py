@@ -110,6 +110,19 @@ class Response:
             logging.debug("ERROR on Receive aadr" + str(e))
 
 
+    ## metodo per la ricezione dell'ack per
+    ## rpad, quindi gestisce 'APAD'
+    @staticmethod
+    def rpad_ack(sock_end):
+        try:
+            data = sock_end.recv(512)
+            command, fields = Parser.parse(data)
+            num_parts = fields[0]
+            return num_parts
+
+        except Exception as e:
+            logging.debug("ERROR on Receive apad" + str(e))
+
     ## questo metodo chiude la socket verificando se
     ## effettivamente si riesce a chiudere
     @staticmethod
