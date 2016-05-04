@@ -22,9 +22,8 @@ class Utility:
     ## variabili condivise in piu' parti del programma
     LEN_PART = 262144
     SessionID = ''
-    listFindPeer = []
-    listFindFile = []
-    listResultFile = []
+    listLastSerch=[]
+    # Todo controllare se queste variabili vengono usate e nel caso eliminare quelle inutilizzate
     database = ManageDB.ManageDB()
 
     # Metodo per trasformare un vettore di byte nella stringa di bit

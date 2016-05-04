@@ -165,26 +165,79 @@ class Window(Frame):
     def btn_ricerca_click(self):
         logging.debug("STAI CERCANDO: "+self.en_ricerca.get())
 
-        # prendo il campo di ricerca
-        search=self.en_ricerca.get().strip(' ')
-        # Creo la socket di connessione al tracker
-        sock = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
-        Request.look(sock,search)
-        # Rimuovo la lista dei file scaricati
-        self.list_risultati.delete(0,END)
-        # Leggo la ALOO
-        #  Popolo la lista
-        self.risultati = Response.look_ack(sock)
-        Response.close_socket(socket)
+        if Utility.SessionID != '':
+            # prendo il campo di ricerca
+            search=self.en_ricerca.get().strip(' ')
+            # Creo la socket di connessione al tracker
+            sock_end = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
+            Request.look(sock_end,search)
 
-        # inserisco tutti gli elementi della lista nella lista nel form
-        for value in self.risultati:
-            self.list_risultati.insert(END, value)
+            # Rimuovo la lista dei file scaricati
+            self.list_risultati.delete(0,END)
+            # Azzero la ricerca precedente
+            Utility.listLastSerch = []
+            #  Popolo la lista
+            Utility.listLastSearch = Response.look_ack(sock_end)
+            Response.close_socket(sock_end)
+
+            # inserisco tutti gli elementi della lista nella lista nel form
+            for value in Utility.listLastSearch:
+                self.list_risultati.insert(END, value[0] + ' ' + value[1])
 
     def btn_scarica_click(self):
         try:
+            #indice elemento da scaricare
             index = self.list_risultati.curselection()[0]
             logging.debug("selezionato: " + self.risultati[index])
+            #prendo l'elemento da scaricare
+            info=Utility.listLastSerch[index]
+            md5=info[0]
+            name=info[1]
+            lFile=int(info[2])
+            lPart=int(info[3])
+            #Calcolo il numero delle parti
+            if lFile%lPart==0:
+                numPart=lFile//lPart
+            else:
+                numPart=(lFile//lPart)+1
+
+            if numPart%8==0:
+                numPart8=numPart//8
+                parte='0'*numPart
+            else:
+                numPart8=(numPart//8)+1
+                parte='0'*numPart+'0'*(8-(numPart%8))
+
+            Utility.database.addPart(md5,Utility.SessionID,parte)
+            partiScaricate=0
+            while partiScaricate!=numPart:
+                sock=Request.create_socket(Utility.IP_TRACKER,Utility.PORT_TRACKER)
+                msg='FCHU'+Utility.SessionID+md5
+                Request.sendMessagge(sock,msg)
+                # gestisco la risposta dei AFCH, mi ritorna la lista dei peer che hanno fatto match
+                listaPeer=Response.afch(sock,numPart8)
+                # Chiudo la socket,non serve tenerla aperta
+                Response.close_socket(sock)
+
+                # Ora seleziono ed elaboro la risposta
+                listaPart=[] # E lista dove per ogni parte memorizzo i peer che ce l'hanno, lista di liste
+                for i in range(0,numPart):
+                    lista=[]
+                    for j in range(0,len(listaPeer)):
+                        part=listaPeer[j][2]
+                        if part[i]=='1':
+                            lista.append(listaPeer[j][0]+'-'+listaPeer[j][1]) # salvo Ip e port separtati da -
+                    listaPart.append(lista)
+
+                #ora devo selezionare da chi scaricare cosa, dando priorità a quelli meno disponibili
+
+                # eseguo il download delle parti
+
+                #conto il numero di parti scaricate, interrogando il database
+                part=Utility.database.findPartForMd5AndSessionId(Utility.SessionID,md5)
+                partiScaricate=part.count('1')
+
+
 
             self.prog_scaricamento.start(20)
         except Exception as e:

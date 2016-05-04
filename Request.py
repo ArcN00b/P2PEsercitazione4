@@ -39,7 +39,7 @@ class Request:
         try:
             request = "LOGI"
             request = request + Utility.IP_MY + Utility.PORT_MY
-            sock_end.send(request)
+            sock_end.send(request.encode())
             logging.debug("inviato logi")
         except Exception as e:
             logging.debug("ERROR on Send login" + str(e))
@@ -51,7 +51,7 @@ class Request:
         try:
             request = 'LOGO'
             request = request + Utility.SessionID
-            sock_end.send(request)
+            sock_end.send(request.encode())
             logging.debug('inviato logo ' + Utility.SessionID)
         except Exception as e:
             logging.debug("ERROR on Send logout" + str(e))
@@ -63,7 +63,7 @@ class Request:
         try:
             search = search.ljust(20)
             request = 'LOOK' + Utility.SessionID + search
-            sock_end.send(request)
+            sock_end.send(request.encode())
             logging.debug("Inviata look")
         except Exception as e:
             logging.debug("Errore look "+str(e))

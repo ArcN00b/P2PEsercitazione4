@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from Parser import *
+from Utility import *
 import random
 import logging
 
@@ -86,6 +87,32 @@ class Response:
 
         except Exception as e:
             logging.debug("ERROR on Receive aadr" + str(e))
+
+    # Metodo per gestire la AFCH
+    @staticmethod
+    def afch(socket,numPart8):
+        listaPeer=[] # E una lista di liste,
+        data=socket.recv(7)
+        cmd,fields=Parser.parse(data,None)
+        numHit=fields[0]
+        for i in range(0,numHit):
+            dim=55+5+numPart8
+            d=socket.recv(dim)
+            while len(d)<dim:
+                tmp=socket.recv(dim-len(d))
+                d=d+tmp
+
+            lista=[]
+            ip_i=d[0:55].decode()
+            port_i=d[55:60].decode()
+            part=d[60:(60+numPart8)]
+            strPart=Utility.toBytes(part)
+            lista.append(ip_i)
+            lista.append(port_i)
+            lista.append(strPart)
+            listaPeer.append(lista)
+
+        return listaPeer
 
     ## questo metodo chiude la socket verificando se
     ## effettivamente si riesce a chiudere
