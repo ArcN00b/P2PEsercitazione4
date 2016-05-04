@@ -94,11 +94,12 @@ class Worker(threading.Thread):
 
                     if numPart%8==0:
                         numPart8=numPart//8
-                        parte='0'*numPart
+                        #parte='1'*numPart
                     else:
                         numPart8=(numPart//8)+1
-                        parte='0'*numPart+'0'*(8-(numPart%8))
+                        #parte='0'*numPart+'0'*(8-(numPart%8))
 
+                    parte='1'*numPart
                     Utility.database.addFile(ssId,name,md5,lFile,lPart)
                     Utility.database.addPart(md5,ssId,parte)
                     msgRet=msgRet+'{:0>8}'.format(numPart)
@@ -147,7 +148,8 @@ class Worker(threading.Thread):
                             datiPeer=self.database.findPeer(dati[i][0])
                             msgp=msgp+datiPeer[0][0].encode()
                             msgp=msgp+datiPeer[0][1].encode()
-                            tmp=Utility.toBytes(dati[i][1],0)
+                            parte=dati[i][1]+'0'*(8-(len(dati[i][1])%8))
+                            tmp=Utility.toBytes(parte,0)
                             msgp=msgp+tmp
                         else:
                             num=num-1

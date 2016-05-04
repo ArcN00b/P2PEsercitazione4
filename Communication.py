@@ -328,7 +328,7 @@ class Download:
             # Invio messaggio FCHU
             Request.fchu(sock,Utility.SessionID,md5)
             # gestisco la risposta dei AFCH, mi ritorna la lista dei peer che hanno fatto match
-            listaPeer=Response.afch(sock,numPart8)
+            listaPeer=Response.fchu_ack(sock,numPart8,numPart)
             # Chiudo la socket,non serve tenerla aperta
             Response.close_socket(sock)
             #Prendo dal database la situazione delle parti del mio file

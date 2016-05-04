@@ -165,6 +165,7 @@ class Window(Frame):
 
     def btn_ricerca_click(self):
         logging.debug("STAI CERCANDO: "+self.en_ricerca.get())
+        # Todo da testare in locale prima
         if Utility.SessionID!='':
             # prendo il campo di ricerca
             serch=self.en_ricerca.get().strip(' ')
@@ -178,7 +179,7 @@ class Window(Frame):
             self.list_risultati.delete(0,END)
             # Leggo la ALOO
             # Popolo la lista globale con i risultati dell'ultima ricerca
-            self.risultati,Utility.listLastSerch = Response.aloo(sock)
+            self.risultati,Utility.listLastSerch = Response.look_ack(sock)
             Response.close_socket(socket)
 
             # inserisco tutti gli elementi della lista nella lista nel form
@@ -187,6 +188,7 @@ class Window(Frame):
 
     def btn_scarica_click(self):
         try:
+            # Todo da testare in locale prima
             #indice elemento da scaricare
             index = self.list_risultati.curselection()[0]
             logging.debug("selezionato: " + self.risultati[index])

@@ -45,7 +45,7 @@ class Response:
 
     # Metodo per gestire una ALOO
     @staticmethod
-    def aloo(socket):
+    def look_ack(socket):
         lista=[]
         listaAll=[]
         data=socket.recv(7)
@@ -72,7 +72,7 @@ class Response:
 
     # Metodo per gestire la AFCH
     @staticmethod
-    def afch(socket,numPart8):
+    def fchu_ack(socket,numPart8,numPart):
         listaPeer=[] # E una lista di liste,
         data=socket.recv(7)
         cmd,fields=Parser.parse(data,None)
@@ -91,7 +91,7 @@ class Response:
             strPart=Utility.toBit(part)
             lista.append(ip_i)
             lista.append(port_i)
-            lista.append(strPart)
+            lista.append(strPart[0:numPart])
             listaPeer.append(lista)
 
         return listaPeer
