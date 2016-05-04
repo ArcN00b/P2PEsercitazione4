@@ -155,8 +155,26 @@ class Worker(threading.Thread):
                 # Todo da scrivere
 
             elif command == "RPAD":
-                True
-                # Todo da scrivere
+                # Todo da testare
+
+                # Assegno il contenuto di fields per comodità
+                ssId = fields[0]
+                md5 = fields[1]
+                partNum = int(fields[2])
+
+                # Ottengo la parte dal database modificando il valore in posizione partNum
+                part = Utility.database.findPartForMd5AndSessionId(ssId, md5)
+                tmp = list(part[0][0])
+                tmp = tmp[partNum] = "1"
+                part = "".join(tmp)
+
+                # Conto quante parti ha attualmente il peer e aggiorno il database
+                partOwn = part.coun("1")
+                Utility.database.updatePart(ssId, md5, part)
+
+                # Preparo e invio il messaggio di ritorno
+                msgRet = "APAD" + str(partOwn).zfill(8)
+                self.client.sendall(msgRet.encode())
 
             elif command == "APAD":
                 True
@@ -214,9 +232,9 @@ class Worker(threading.Thread):
                         Utility.database.removeAllFileForSessionId(ssId)
 
                         # Preparo ora il messaggio di ritorno ALOG
-                        msgRet = "ALOG" + partOwn.zfill(10)
+                        msgRet = "ALOG" + str(partOwn).zfill(10)
                     else:
-                        msgRet = "NLOG" + partDown.zfill(10)
+                        msgRet = "NLOG" + str(partDown).zfill(10)
 
                 # Invio il messaggio di ritorno
                 self.client.sendall(msgRet.encode())
