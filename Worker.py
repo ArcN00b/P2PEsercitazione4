@@ -250,6 +250,8 @@ class Worker(threading.Thread):
 
                         # Preparo ora il messaggio di ritorno ALOG
                         msgRet = "ALOG" + str(partOwn).zfill(10)
+
+                    # In caso contrario invio le parti effettivamente scaricate dagli altri peer
                     else:
                         msgRet = "NLOG" + str(partDown).zfill(10)
 
