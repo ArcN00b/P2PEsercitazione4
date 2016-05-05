@@ -4,9 +4,9 @@ from tkinter import *
 from tkinter.ttk import Progressbar
 from tkinter.filedialog import askopenfilename
 from Tracker import *
-from Request import *
-from Response import *
-from Utility import *
+#from Request import *
+#from Response import *
+#from Utility import *
 from Communication import *
 import logging
 
@@ -278,7 +278,7 @@ class Window(Frame):
 
             #Classe che esegue il download di un file
             #down=Download(info)
-            #Communication.run()
+            #down.run()
             self.prog_scaricamento.start(20)
         except Exception as e:
             logging.debug("NULLA SELEZIONATO")
