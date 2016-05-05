@@ -219,6 +219,11 @@ class Window(Frame):
             md5_file = Utility.generateMd5(path_file)
             file_name = path_file.split('/')[-1]
             elem = (md5_file, file_name, num_parts)
+
+            ## aggiornamento database ocn l'aggiunta del file e delle parti
+            Utility.database.addFile(Utility.SessionID, file_name, md5_file, os.stat(path_file).st_size, Utility.LEN_PART)
+            Utility.database.addPart(md5_file, Utility.SessionID, '1'*num_parts)
+
             self.file_aggiunti.append(elem)
             self.list_file.insert(END, file_name)
 

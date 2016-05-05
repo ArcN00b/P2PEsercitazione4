@@ -90,7 +90,7 @@ class Utility:
             hash.update(buf)
             buf = f.read(4096)
 
-        hash.update(Utility.IPV4_MY+'|'+Utility.IPV6_MY+str(Utility.PORT_MY))
+        hash.update((Utility.IPV4_MY+'|'+Utility.IPV6_MY+str(Utility.PORT_MY)).encode())
 
         # Return del digest
         return hash.hexdigest()
