@@ -194,7 +194,7 @@ class Window(Frame):
             logging.debug("selezionato: " + self.risultati[index])
             #prendo l'elemento da scaricare
             info=Utility.listLastSerch[index]
-
+            '''
             info=info.split('&|&')
             md5=info[0]
             name=info[1]
@@ -275,6 +275,8 @@ class Window(Frame):
                 #conto il numero di parti scaricate, interrogando il database
                 myPart=Utility.database.findPartForMd5AndSessionId(Utility.SessionID,md5)
                 partiScaricate=myPart.count('1')
+
+            '''
 
             #Classe che esegue il download di un file
             #down=Download(info)

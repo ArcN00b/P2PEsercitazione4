@@ -333,14 +333,15 @@ class Download:
             Response.close_socket(sock)
             #Prendo dal database la situazione delle parti del mio file
             myPart=Utility.database.findPartForMd5AndSessionId(Utility.SessionID,md5)
+            myPart=myPart[0][0]
             # Ora seleziono ed elaboro la risposta
             listaPart=[] # E lista dove per ogni parte memorizzo i peer che ce l'hanno, lista di liste
             for i in range(0,numPart):
                 if myPart[i]=='0':
                     lista=[]
+                    lista.append(str(i))
                     for j in range(0,len(listaPeer)):
                         part=listaPeer[j][2]
-                        lista.append(str(i))
                         if part[i]=='1':
                             lista.append(listaPeer[j][0]+'-'+listaPeer[j][1]) # salvo Ip e port separtati da -
                     listaPart.append(lista)
@@ -378,5 +379,3 @@ class Download:
             #conto il numero di parti scaricate, interrogando il database
             myPart=Utility.database.findPartForMd5AndSessionId(Utility.SessionID,md5)
             partiScaricate=myPart.count('1')
-
-
