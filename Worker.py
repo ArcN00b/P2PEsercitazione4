@@ -195,7 +195,7 @@ class Worker(threading.Thread):
 
                     # Se il file è completo devo portare avanti l'indice di lettura
                     if owned:
-                        f.seek(partNum * lenPart)
+                        f.seek(int(partNum) * int(lenPart))
 
                     # Leggo la parte intera
                     r = f.read(lenPart)
@@ -324,9 +324,9 @@ class Worker(threading.Thread):
 
             # invio della risposta creata controllando che sia valida
             #print(resp+'\r\n')
-            if resp is not None:
-                self.client.sendall(resp.encode())
-            print("comando inviato: " + resp)
+            #if resp is not None:
+            #    self.client.sendall(resp.encode())
+            print("comando inviato: " + command)
 
             # ricezione del dato e immagazzinamento fino al max
             #data = self.client.recv(2048)

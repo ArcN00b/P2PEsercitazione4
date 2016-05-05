@@ -84,6 +84,7 @@ class Scaricamento:
                         break
 
                 # attendo un tempo per rifare la fchu
+                # questo è un cilco di attesa attivo
                 a=time.strftime("%M:%S")
                 a=a.split(':')
                 a=int(a[0])*60+int(a[1])
