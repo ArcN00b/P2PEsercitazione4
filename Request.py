@@ -2,6 +2,7 @@
 
 from Utility import *
 from Communication import *
+#import Communication
 import socket
 import random
 import logging
@@ -67,6 +68,7 @@ class Request:
             logging.debug("Inviata look")
         except Exception as e:
             logging.debug("Errore look "+str(e))
+            raise Exception("Errore Invio Look")
 
     # Metodo che invia una FCHU
     @staticmethod
@@ -77,6 +79,7 @@ class Request:
             logging.debug("Inviata fchu")
         except Exception as e:
             logging.debug("Errore fchu "+str(e))
+            raise Exception("Errore invio fchu")
 
     # Metodo che invia una RPAD
     @staticmethod

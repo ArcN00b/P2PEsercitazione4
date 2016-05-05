@@ -165,7 +165,7 @@ class Worker(threading.Thread):
                 chunklen = 512
                 md5 = fields[0]
                 partNum = fields[1]
-                obj = Utility.database.findFile(Utility.sessionId, md5, None, 1)
+                obj = Utility.database.findFile(Utility.SessionID, md5, None, 1)
 
                 # Ora preparo il file per la lettura
                 if len(obj) > 0:
@@ -179,7 +179,7 @@ class Worker(threading.Thread):
                         owned = False
 
                     # Calcolo in quanti chunk devo dividere la parte
-                    lenPart = int(obj([0][1]))
+                    lenPart = int(obj[0][1])
                     num_chunk = lenPart // chunklen
                     if lenPart % chunklen != 0:
                         num_chunk = num_chunk + 1
@@ -187,7 +187,7 @@ class Worker(threading.Thread):
                     num_chunk = str(num_chunk).zfill(6)
 
                     # costruzione risposta come ARET0000XX
-                    msgRet = ('ARET' + num_chunk).encode()
+                    msgRet = ('AREP' + num_chunk).encode()
                     self.client.sendall(msgRet)
 
                     # Apro il file in lettura e leggo il primo chunk della parte
@@ -202,16 +202,17 @@ class Worker(threading.Thread):
 
                     # Finchè non completo la parte o il file non termina
                     while len(r) > 0:
-                        
-                        # Aggiungo la lunghezza del chunk e il chunk
-                        mess = str(len(r)).zfill(5).encode()
+                        mp=b''
+
                         if len(r) > chunklen:
-                            mess += r[:chunklen]
+                            mp += r[:chunklen]
                             r = r[chunklen:]
                         else:
-                            mess += r
+                            mp += r
                             r = ''
 
+                        # Aggiungo la lunghezza del chunk e il chunk
+                        mess = str(len(mp)).zfill(5).encode()+mp
                         # Invio effettivamente il messaggio
                         self.client.sendall(mess)
 
@@ -328,7 +329,7 @@ class Worker(threading.Thread):
             print("comando inviato: " + resp)
 
             # ricezione del dato e immagazzinamento fino al max
-            data = self.client.recv(2048)
+            #data = self.client.recv(2048)
 
         # fine del ciclo
 
