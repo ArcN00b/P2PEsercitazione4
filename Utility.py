@@ -17,12 +17,14 @@ class Utility:
     IP_MY = IPV4_MY+'|'+IPV6_MY
 
     PORT_MY = 12345
+
     PATHDIR = '/home/marco/seedfolder/'
     PATHTEMP = '/home/marco/seedfolder/temp/'
 
     ## variabili condivise in piu' parti del programma
     LEN_PART = 262144
-    SessionID = ''
+
+    sessionID = ''
     listLastSerch=[]
     numDown=0
     numDownParalleli=10

@@ -90,7 +90,7 @@ class Window(Frame):
         self.lb_progresso = Label(self.quadro_sinistro_ricerca, text='Progresso Scaricamento', background="white")
         self.lb_progresso.pack(side=TOP, padx=self.imb_x, pady=self.imb_y)
 
-        self.prog_scaricamento = Progressbar(self.quadro_sinistro_ricerca, orient='horizontal', mode='indeterminate')
+        self.prog_scaricamento = Progressbar(self.quadro_sinistro_ricerca, orient='horizontal', mode='determinate')
         self.prog_scaricamento.pack(side=TOP, fill=BOTH, padx=self.imb_x, pady=self.imb_y)
 
         ## inserimento listbox dei risultati della ricerca e bottone scarica dalla selezione
@@ -160,8 +160,11 @@ class Window(Frame):
 
             ## si rimuove la cartella temporanea, i file
             ## e le parti dal database associate
-            Utility.database.removeAllFileForSessionId(Utility.SessionID)
-            shutil.rmtree(Utility.PATHTEMP)
+            Utility.database.removeAllFileForSessionId(Utility.sessionID)
+            try:
+                shutil.rmtree(Utility.PATHTEMP)
+            except Exception as e:
+                logging.debug('cartella non esistente')
 
         ## altrimenti rimane connesso
         else:
@@ -171,13 +174,13 @@ class Window(Frame):
     def btn_ricerca_click(self):
         logging.debug("STAI CERCANDO: "+self.en_ricerca.get())
         # Todo da testare in locale prima
-        if Utility.SessionID!='':
+        if Utility.sessionID!= '':
             # prendo il campo di ricerca
             serch=self.en_ricerca.get().strip(' ')
             # Creo la socket di connessione al tracker
             sock = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
             # Invio richiesta look
-            Request.look(sock,Utility.SessionID,serch)
+            Request.look(sock, Utility.sessionID, serch)
             # Azzero la ricerca precedente
             Utility.listLastSerch=[]
             # Rimuovo la lista dei file scaricati
@@ -221,8 +224,8 @@ class Window(Frame):
             elem = (md5_file, file_name, num_parts)
 
             ## aggiornamento database ocn l'aggiunta del file e delle parti
-            Utility.database.addFile(Utility.SessionID, file_name, md5_file, os.stat(path_file).st_size, Utility.LEN_PART)
-            Utility.database.addPart(md5_file, Utility.SessionID, '1'*num_parts)
+            Utility.database.addFile(Utility.sessionID, file_name, md5_file, os.stat(path_file).st_size, Utility.LEN_PART)
+            Utility.database.addPart(md5_file, Utility.sessionID, '1' * num_parts)
 
             Divide.Divider.divide(Utility.PATHDIR, Utility.PATHTEMP, file_name, Utility.LEN_PART)
 
@@ -254,5 +257,8 @@ if __name__ == '__main__':
         root = Tk()
         root.geometry("800x600")
         app = Window(root=root)
+
+        tcpServer = Tracker(Utility.database, Utility.IP_MY,  Utility.PORT_MY)
+        tcpServer.start()
 
         root.mainloop()

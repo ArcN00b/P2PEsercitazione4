@@ -17,7 +17,7 @@ class Response:
         try:
             data = sock_end.recv(512)
             command, fields = Parser.parse(data)
-
+            logging.debug('ricevuto login_ack: ' + str(data))
             ## ritorno del sessionID
             return fields[0]
 

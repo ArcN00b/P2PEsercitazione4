@@ -165,7 +165,7 @@ class Worker(threading.Thread):
                 chunklen = 512
                 md5 = fields[0]
                 partNum = fields[1]
-                obj = Utility.database.findFile(Utility.SessionID, md5, None, 1)
+                obj = Utility.database.findFile(Utility.sessionID, md5, None, 1)
 
                 # Ora preparo il file per la lettura
                 if len(obj) > 0:

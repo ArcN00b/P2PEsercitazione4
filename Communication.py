@@ -176,7 +176,7 @@ class Downloader(threading.Thread):
                 f.write(buffer)  # Scrivo il contenuto del chunk nel file
 
             # Avviso il tracker di aver completato il download della parte del file
-            msgPart = 'RPAD' + Utility.SessionID + md5 + '{:0>8}'.format(int(part))
+            msgPart = 'RPAD' + Utility.sessionID + md5 + '{:0>8}'.format(int(part))
             sockTracker = Request(Utility.IP_TRACKER, int(Utility.PORT_TRACKER))
             sentTracker = sockTracker.send(msgPart.encode())
             # TODO pensare a come agire in caso di RPAD non inviata correttamente
@@ -188,9 +188,9 @@ class Downloader(threading.Thread):
             # TODO pensare a incongruenze aggiungendo parte al database se non viene avvisato il tracker
             # TODO inserire il codice di merge in un try catch?
             # Aggiungo la parte alla lista delle parti nel database
-            strPart = Utility.database.findPartForMd5AndSessionId(Utility.SessionID, md5)
+            strPart = Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5)
             strPart[part-1] = '1'
-            Utility.database.updatePart(Utility.SessionID, md5, strPart)
+            Utility.database.updatePart(Utility.sessionID, md5, strPart)
 
             # Verifico se sono stati scaricati tutti i file e in tal caso eseguo il merge
             # Verifico se non è presente nessun 0 nella lista delle parti
@@ -206,7 +206,7 @@ class Downloader(threading.Thread):
                 Merge.Merger.merge(name, lenFile, lenPart)
 
                 # Avviso il tracker di avere il file completo
-                msgFile = 'ADDR' + Utility.SessionID + '{:0>10}'.format(lenFile) +  + '{:0>6}'.format(lenPart)
+                msgFile = 'ADDR' + Utility.sessionID + '{:0>10}'.format(lenFile) + + '{:0>6}'.format(lenPart)
                 sentTracker = sockTracker.send(msgFile.encode())
                 # TODO pensare a come agire in caso di ADDR non inviata correttamente
                 if sentTracker is None or sentTracker < len(msgFile):
