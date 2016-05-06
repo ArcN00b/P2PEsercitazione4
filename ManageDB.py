@@ -242,6 +242,7 @@ class ManageDB:
 
             if (count[0][0]>0):
                 c.execute("DELETE FROM FILES WHERE SESSIONID=:SID", {"SID": sessionId})
+                c.execute("DELETE FROM PARTS WHERE SESSIONID=:SID", {"SID": sessionId})
                 conn.commit()
 
         except sqlite3.Error as e:
@@ -321,7 +322,7 @@ class ManageDB:
             c=conn.cursor()
 
             if flag == 1:
-                c.execute("SELECT NAME FROM FILES WHERE SESSIONID=:SID AND MD5=:M",{"SID":sessionId,"M":Md5})
+                c.execute("SELECT NAME,LENPART FROM FILES WHERE SESSIONID=:SID AND MD5=:M",{"SID":sessionId,"M":Md5})
                 count=c.fetchall()
             elif flag == 2:
                 c.execute("SELECT SESSIONID,NAME FROM FILES WHERE MD5=:M",{"M":Md5})
@@ -331,6 +332,9 @@ class ManageDB:
                 count = c.fetchall()
             elif flag == 4:
                 c.execute("SELECT LENFILE,LENPART FROM FILES WHERE MD5=:M",{"M":Md5})
+                count = c.fetchall()
+            elif flag == 5:
+                c.execute("SELECT SESSIONID FROM FILES WHERE SESSIONID!=SID MD5=:M",{"SID":sessionId,"M": Md5})
                 count = c.fetchall()
 
             conn.commit()
@@ -498,7 +502,7 @@ class ManageDB:
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            c.execute("SELECT PART FROM PARTS WHERE MD5=:M AND SESSIONID=SSID", {"M": Md5,"SSID":SessionId})
+            c.execute("SELECT PART FROM PARTS WHERE MD5=:M AND SESSIONID=:SSID", {"M": Md5,"SSID":SessionId})
             count = c.fetchall()
 
             conn.commit()

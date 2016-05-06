@@ -78,6 +78,17 @@ class Request:
             logging.debug("Inviata fchu")
         except Exception as e:
             logging.debug("Errore fchu "+str(e))
+            raise Exception("Errore invio fchu")
+
+    # Metodo che invia una RPAD
+    @staticmethod
+    def rpad(socket, ssid, md5, partnum):
+        try:
+            msg = "RPAD" + ssid + md5 + str(partnum).zfill(8)
+            socket.send(msg.encode())
+            logging.debug("Inviata rpad")
+        except Exception as e:
+            logging.debug("Errore rpad " + str(e))
 
     # Metodo che invia un messaggio generico
     @staticmethod
@@ -110,7 +121,7 @@ class Request:
     @staticmethod
     def close_socket(socket_end):
         try:
-            socket_end.shutdown()
+            socket_end.shutdown(1)
             socket_end.close()
         except Exception as e:
             logging.debug("ERROR on Close " + str(e))
@@ -122,7 +133,7 @@ class Request:
     def download(ip, port, file_Md5,file_name, file_part):
         try:
             ts = Downloader(ip, port, file_Md5,file_name, file_part)
-            ts.run()
+            ts.start()
 
         except Exception as e:
             logging.debug("ERROR on Download " + str(e))

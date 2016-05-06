@@ -4,11 +4,10 @@ from tkinter import *
 from tkinter.ttk import Progressbar
 from tkinter.filedialog import askopenfilename
 from Tracker import *
-from Request import *
-from Response import *
-from Utility import *
-from Communication import *
+from Merge_Divide import Divide
+from Scaricamento import *
 import logging
+import shutil
 
 
 class Window(Frame):
@@ -74,15 +73,11 @@ class Window(Frame):
 
 
         ##------------ quadri di divisione della ricerca e scaricamento-------------
-        self.quadro_sinistro_ricerca = Frame(self.quadro_centrale_ricerca, background="white", borderwidth=5,
-                                             relief=RIDGE)
-        self.quadro_sinistro_ricerca.pack(side=LEFT, fill=BOTH, expand=1, ipadx=self.imb_int_x, ipady=self.imb_int_y,
-                                          padx=self.imb_x, pady=self.imb_y)
+        self.quadro_sinistro_ricerca = Frame(self.quadro_centrale_ricerca, background="white", borderwidth=5, relief=RIDGE)
+        self.quadro_sinistro_ricerca.pack(side=LEFT, fill=BOTH, expand=1, ipadx = self.imb_int_x, ipady = self.imb_int_y, padx=self.imb_x, pady=self.imb_y)
 
-        self.quadro_destro_ricerca = Frame(self.quadro_centrale_ricerca, background="white", borderwidth=5,
-                                           relief=RIDGE, )
-        self.quadro_destro_ricerca.pack(side=LEFT, fill=BOTH, expand=1, ipadx=self.imb_int_x, ipady=self.imb_int_y,
-                                        padx=self.imb_x, pady=self.imb_y)
+        self.quadro_destro_ricerca = Frame(self.quadro_centrale_ricerca, background="white", borderwidth=5, relief=RIDGE,)
+        self.quadro_destro_ricerca.pack(side=LEFT, fill=BOTH, expand =1, ipadx=self.imb_int_x, ipady=self.imb_int_y, padx=self.imb_x, pady=self.imb_y)
 
         ## inserimento widget di ricerca e scaricamento
         self.en_ricerca = Entry(self.quadro_sinistro_ricerca)
@@ -111,12 +106,10 @@ class Window(Frame):
         ##---------------- parte di aggiunta dei file -----------------------------
         ## quadri di divisione per l'aggiunta
         self.quadro_sinistro_file = Frame(self.quadro_centrale_file, background="white", borderwidth=5, relief=RIDGE)
-        self.quadro_sinistro_file.pack(side=LEFT, fill=BOTH, expand=1, ipadx=self.imb_int_x, ipady=self.imb_int_y,
-                                       padx=self.imb_x, pady=self.imb_y)
+        self.quadro_sinistro_file.pack(side=LEFT, fill=BOTH, expand=1, ipadx=self.imb_int_x, ipady=self.imb_int_y,padx=self.imb_x, pady=self.imb_y)
 
         self.quadro_destro_file = Frame(self.quadro_centrale_file, background="white", borderwidth=5, relief=RIDGE)
-        self.quadro_destro_file.pack(side=LEFT, fill=BOTH, expand=1, ipadx=self.imb_int_x, ipady=self.imb_int_y,
-                                     padx=self.imb_x, pady=self.imb_y)
+        self.quadro_destro_file.pack(side=LEFT, fill=BOTH, expand=1, ipadx=self.imb_int_x, ipady=self.imb_int_y,padx=self.imb_x, pady=self.imb_y)
 
         self.lb_file = Label(self.quadro_sinistro_file, text='Gestione dei File', background="white")
         self.lb_file.pack(side=TOP, padx=self.imb_x, pady=self.imb_y)
@@ -142,7 +135,7 @@ class Window(Frame):
         exit()
 
     def print_console(self, mess):
-        self.text_console.insert(END, mess + '\n')
+        self.text_console.insert(END,mess+'\n')
 
     ## evento bottone connessione
     def btn_login_click(self):
@@ -164,28 +157,35 @@ class Window(Frame):
         if success:
             self.status.set('DISCONNESSO - PARTI POSSEDUTE: ' + n_part)
             logging.debug('DISCONNESSO - PARTI POSSEDUTE: ' + n_part)
+
+            ## si rimuove la cartella temporanea, i file
+            ## e le parti dal database associate
+            Utility.database.removeAllFileForSessionId(Utility.SessionID)
+            shutil.rmtree(Utility.PATHTEMP)
+
         ## altrimenti rimane connesso
         else:
             self.stutus.set('FALLIMENTO DISCONNESSIONE - PARTI SCARICATE: ' + n_part)
             logging.debug('Disconnessione non consentita hai della parti non scaricate da altri')
 
     def btn_ricerca_click(self):
-        logging.debug("STAI CERCANDO: " + self.en_ricerca.get())
-
-        if Utility.SessionID != '':
+        logging.debug("STAI CERCANDO: "+self.en_ricerca.get())
+        # Todo da testare in locale prima
+        if Utility.SessionID!='':
             # prendo il campo di ricerca
-            search = self.en_ricerca.get().strip(' ')
+            serch=self.en_ricerca.get().strip(' ')
             # Creo la socket di connessione al tracker
-            sock_end = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
-            Request.look(sock_end, search)
-
-            # Rimuovo la lista dei file scaricati
-            self.list_risultati.delete(0, END)
+            sock = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
+            # Invio richiesta look
+            Request.look(sock,Utility.SessionID,serch)
             # Azzero la ricerca precedente
-            Utility.listLastSerch = []
-            #  Popolo la lista
-            Utility.listLastSearch = Response.look_ack(sock_end)
-            Response.close_socket(sock_end)
+            Utility.listLastSerch=[]
+            # Rimuovo la lista dei file scaricati
+            self.list_risultati.delete(0,END)
+            # Leggo la ALOO
+            # Popolo la lista globale con i risultati dell'ultima ricerca
+            self.risultati,Utility.listLastSerch = Response.look_ack(sock)
+            Response.close_socket(sock)
 
             # inserisco tutti gli elementi della lista nella lista nel form
             for value in Utility.listLastSearch:
@@ -200,8 +200,8 @@ class Window(Frame):
             # prendo l'elemento da scaricare
             info = Utility.listLastSerch[index]
 
-            # Classe che esegue il download di un file
-            down = Download(info)
+            #Classe che esegue il download di un file
+            down=Scaricamento(info)
             down.run()
             self.prog_scaricamento.start(20)
         except Exception as e:
@@ -223,6 +223,8 @@ class Window(Frame):
             ## aggiornamento database ocn l'aggiunta del file e delle parti
             Utility.database.addFile(Utility.SessionID, file_name, md5_file, os.stat(path_file).st_size, Utility.LEN_PART)
             Utility.database.addPart(md5_file, Utility.SessionID, '1'*num_parts)
+
+            Divide.Divider.divide(Utility.PATHDIR, Utility.PATHTEMP, file_name, Utility.LEN_PART)
 
             self.file_aggiunti.append(elem)
             self.list_file.insert(END, file_name)
