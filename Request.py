@@ -2,7 +2,6 @@
 
 from Utility import *
 from Communication import *
-#import Communication
 import socket
 import random
 import logging
@@ -69,7 +68,6 @@ class Request:
             logging.debug("Inviata look")
         except Exception as e:
             logging.debug("Errore look "+str(e))
-            raise Exception("Errore Invio Look")
 
     # Metodo che invia una FCHU
     @staticmethod

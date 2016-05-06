@@ -1,28 +1,25 @@
 import threading
 import socket
 import struct
-import time
+import os
 from Parser import *
 from Response import *
 from ManageDB import *
 from Utility import *
-from Communication import *
-import os
 
 
 # Costruttore che inizializza gli attributi del Worker
 class Worker(threading.Thread):
-    client = None
+    client = 0
     database = None
     lock = None
 
     # Costruttore che inizializza gli attributi del Worker
-    def __init__(self, client, lock):
+    def __init__(self, client, database):
         # definizione thread del client
         threading.Thread.__init__(self)
         self.client = client
-        self.database = None
-        self.lock = lock
+        self.database = database
 
     # Funzione che lancia il worker e controlla la chiusura improvvisa
     def run(self):
@@ -30,8 +27,7 @@ class Worker(threading.Thread):
             self.comunication()
         except Exception as e:
             print("errore: ", e)
-            if self.lock.acquired():
-                self.lock.release()
+            self.client.shutdown(1)
             self.client.close()
 
     # Funzione che viene eseguita dal thread Worker
@@ -44,383 +40,279 @@ class Worker(threading.Thread):
 
         # ciclo continua a ricevere i dati
         while running and len(data) > 0:
+
             # recupero del comando
-            buffer = data.decode()
+            buffer = data
             command, fields = Parser.parse(buffer)
             # risposta da inviare in modo sincronizzato
-            self.lock.acquire()
             resp = ""
+            # TODO modificare che comando eseguire in che caso
 
-            if command == "RETR":
-                # TODO controllare coerenza con nuovi metodi
+            # controllo del comando effettuato
+            # LOGI
+            if command == "LOGI":
+                # Todo da testare
+                msgRet="ALGI"
+                try:
+                    ip=fields[0]
+                    port=fields[1]
+                    dati=self.database.findPeer(None,ip,port,1)
+                    if len(dati)>0:
+                        ssId=dati[0][0]
+                        msgRet=msgRet+ssId
+                    else:
+                        ssId=Utility.generateId(16)
+                        msgRet=msgRet+ssId
+                except:
+                    ssId='0'*16
+                    msgRet=msgRet+ssId
+                finally:
+                    self.client.sendall(msgRet.encode())
+
+            elif command == "ALGI":
+                True
+                # Todo da scrivere
+
+            elif command == "ADDR":
+                # Todo da testare
+                msgRet="AADR"
+                ssId=fields[0]
+                lFile=fields[1]
+                lPart=fields[2]
+                name=fields[3]
+                md5=fields[4]
+                if len(self.database.findPeer(ssId,None,None,2))>0:
+                    a=int(lFile)
+                    b=int(lPart)
+                    if a%b==0:
+                        numPart=a//b
+                    else:
+                        numPart=(a//b)+1
+
+                    if numPart%8==0:
+                        numPart8=numPart//8
+                        parte='1'*numPart
+                    else:
+                        numPart8=(numPart//8)+1
+                        parte='0'*numPart+'0'*(8-(numPart%8))
+
+                    Utility.database.addFile(ssId,name,md5,lFile,lPart)
+                    Utility.database.addPart(md5,ssId,parte)
+                    msgRet=msgRet+'{:0>8}'.format(numPart)
+                    self.client.sendall(msgRet.encode())
+
+            elif command == "AADR":
+                True
+                # Todo da Scrivere
+
+            elif command == "LOOK":
+                # Todo da testare
+                ssId=fields[0]
+                name=fields[1]
+                # controllo se il sessionId è nel database
+                if len(self.database.findPeer(ssId,None,None,2))>0:
+                    dati=self.database.findMd5(name.strip())
+                    numFileMatch=len(dati)
+                    msgp=''
+                    for i in range(0,len(dati)):
+                        if dati[i][4]!=ssId:
+                            msgp=msgp+dati[i][0] #Aggiungo l'iesimo md5
+                            msgp=msgp+dati[i][1]+' '*(100-len(dati[i][1])) #Aggiungo il nome del file
+                            msgp=msgp+'{:0>10}'.format(int(dati[i][2])) #Aggiungo la lunghezza del file
+                            msgp=msgp+'{:0>6}'.format(int(dati[i][3])) #Aggiungo la lunghezza della parte
+                        else:
+                            numFileMatch=numFileMatch-1
+
+                    msgRet="ALOO"+'{:0>3}'.format(numFileMatch)+msgp
+
+                    self.client.sendall(msgRet.encode())
+
+            elif command == "ALOO":
+                True
+                # Todo da scrivere
+
+            elif command == "FCHU":
+                # Todo da testare
+                ssId=fields[0]
+                md5=fields[1]
+                if len(self.database.findPeer(ssId,None,None,2))>0:
+                    dati=self.database.findPartForMd5(md5)
+                    num=len(dati)
+                    msgp=b''
+                    for i in range(0,num):
+                        if ssId!=dati[i][0]:
+                            datiPeer=self.database.findPeer(dati[i][0],None,None,2)
+                            msgp=msgp+datiPeer[0][0].encode()
+                            msgp=msgp+datiPeer[0][1].encode()
+                            parte=dati[i][1]+'0'*(8-(len(dati[i][1])%8))
+                            tmp=Utility.toBytes(dati[i][1],0)
+                            msgp=msgp+tmp
+                        else:
+                            num=num-1
+
+                    msgRet="AFCH".encode()
+                    msgRet=msgRet+('{:0>3}'.format(num)).encode()
+                    msgRet=msgRet+msgp
+                    self.client.sendall(msgRet)
+
+            elif command == "AFCH":
+                True
+                # Todo da scrivere
+
+            elif command == "RETP":
+                # Todo da testare
                 # Imposto la lunghezza dei chunk e ottengo il nome del file a cui corrisponde l'md5
-                chuncklen = 512
-                peer_md5 = fields[0]
-                # TODO cambiato questo metodo perche il database e cambiato
-                obj = Utility.database.findFile(Utility.sessionId,peer_md5,1)
+                chunklen = 512
+                md5 = fields[0]
+                partNum = fields[1]
+                obj = Utility.database.findFile(Utility.SessionID, md5, None, 1)
 
+                # Ora preparo il file per la lettura
                 if len(obj) > 0:
-                    # svuota il buffer
-                    self.out_buffer = []
-                    filename = Utility.PATHDIR + str(obj[0][0].strip())
-                    # lettura statistiche file
-                    statinfo = os.stat(filename)
-                    # imposto lunghezza del file
-                    len_file = statinfo.st_size
-                    # controllo quante parti va diviso il file
-                    num_chunk = len_file // chuncklen
-                    if len_file % chuncklen != 0:
+
+                    # Ricavo il nome del file
+                    filename = Utility.PATHTEMP + str(obj[0][0]).strip() + partNum
+
+                    # Calcolo in quanti chunk devo dividere la parte
+                    lenPart = int(obj[0][1])
+                    num_chunk = lenPart // chunklen
+                    if lenPart % chunklen != 0:
                         num_chunk = num_chunk + 1
                     # pad con 0 davanti
                     num_chunk = str(num_chunk).zfill(6)
+
                     # costruzione risposta come ARET0000XX
-                    mess = ('ARET' + num_chunk).encode()
-                    (self.client).sendall(mess)
+                    msgRet = ('AREP' + num_chunk).encode()
+                    self.client.sendall(msgRet)
 
-                    # Apro il file in lettura e ne leggo una parte
+                    # Apro il file in lettura e leggo il primo chunk della parte
                     f = open(filename, 'rb')
-                    r = f.read(chuncklen)
+                    r = f.read(lenPart)
 
-                    # Finche il file non termina
+                    # Finchè non completo la parte o il file non termina
                     while len(r) > 0:
+                        mp=bytes()
 
-                        # Invio la lunghezza del chunk
-                        mess = str(len(r)).zfill(5).encode()
-                        self.client.sendall((mess + r))
-                        logging.debug('messaggio nel buffer pronto')
+                        if len(r) > chunklen:
+                            mp += r[:chunklen]
+                            r = r[chunklen:]
+                        else:
+                            mp += r
+                            r = ''
 
-                        # Proseguo la lettura del file
-                        r = f.read(chuncklen)
+                        # Aggiungo la lunghezza del chunk e il chunk
+                        mess = str(len(mp)).zfill(5).encode()+mp
+                        # Invio effettivamente il messaggio
+                        self.client.sendall(mess)
+
                     # Chiudo il file
                     f.close()
-                    #self.client.shutdown()
 
-            elif command == "FIND":
-                # TODO compilare manualmente listresultfile invece di inviare la query a se stesso
-                # TODO simone controllala e sistemala per questo caso
-                pktID = Utility.generateId(16)
-                #Ricavo i campi dal messaggio
-                sessionID = fields[0]
-                search = fields[1]
+            elif command == "AREP":
+                True
+                # Todo da scrivere
 
-                '''# Salvo pkID, IP e Porta del peer che ha inviato FIND
-                lst = Utility.database.findPeer(sessionID,None,None,2)
-                Utility.listPeer.append([pkID, lst[0][0], lst[0][1]])'''
+            elif command == "RPAD":
+                # Todo da testare
 
-                # Preparo il messaggio da inviare ai peer
-                ip = Utility.MY_IPV4 + '|' + Utility.MY_IPV6
-                port = '{:0>5}'.format(Utility.PORT)
-                ttl = '{:0>2}'.format(5)
-                msg = "QUER" + pktID + ip + port + ttl + search
-                Utility.database.addPkt(pktID)
+                # Assegno il contenuto di fields per comodità
+                ssId = fields[0]
+                md5 = fields[1]
+                partNum = int(fields[2])
 
-                # Invio la query a tutti i supernodi conosciuti
-                lista = Utility.database.listSuperNode()
-                lista.append([Utility.MY_IPV4+'|'+Utility.MY_IPV6,Utility.PORT])
-                if len(lista) > 0:
-                    t1 = SenderAll(msg, lista)
-                    t1.run()
+                # Ottengo la parte dal database modificando il valore in posizione partNum
+                part = Utility.database.findPartForMd5AndSessionId(ssId, md5)
+                tmp = list(part[0][0])
+                tmp = tmp[partNum] = "1"
+                part = "".join(tmp)
 
-                # TIME SLEEP PER ATTENDERE I RISULTATI DELLA QUERY
-                time.sleep(4)
+                # Conto quante parti ha attualmente il peer e aggiorno il database
+                partOwn = part.coun("1")
+                Utility.database.updatePart(ssId, md5, part)
 
-                # Estraggo i risultati da Utility.listResultFile eliminandoli
-                result = [row for row in Utility.listResultFile if pktID in row]
-                Utility.listResultFile = [row for row in Utility.listResultFile if pktID not in row]
+                # Preparo e invio il messaggio di ritorno
+                msgRet = "APAD" + str(partOwn).zfill(8)
+                self.client.sendall(msgRet.encode())
 
-                ''' Il formato delle righe di result e quello delle AQUE senza il "AQUE" quindi:
 
-                Result[i][0] = PKTID
-                Result[i][1] = IP
-                Result[i][2] = PORT
-                Result[i][3] = MD5
-                Result[i][4] = FILENAME
+            elif command == "LOGO":
+                # Todo da testare
 
-                Uso questo commento per non sbagliare i campi successivamente e per debug
-                MD5 list e pensata per avere in ogni riga MD5 NAME NPEER
-                '''
+                # Ricavo la lista dei file inerenti al sessionID di chi richiede il logout
+                ssId = fields[0]
+                listFile = Utility.database.listFileForSessionId(ssId) #MD5,NAME,LENFILE,LENPART
 
-                # Preparo le strutture dati per gestire l'invio dei risultati
-                md5List = []
-                peerList = []
-                numMd5 = 0
-                numPeer = 0
+                # Se il peer non ha aggiunto file allora posso effettuare logout
+                if(len(listFile) == 0):
+                    msgRet = "ALOG" + '0'.zfill(10)
+                else:
 
-                # Suddivido i risultati per md5 diversi
-                for i in range(0,len(result)):
-                    # Controllo se l'md5 effettivamente e diverso
-                    if result[i][3] not in md5List:
-                        md5List.append([result[i][3], result[i][4], 0]) # MD5 NAME e NPEER
-                        peerList.append(result[i][1], result[i][2])     # IP e PORT
-                        numPeer = 1
+                    # Per ciascun file devo controllare che ci siano altri peer che l'hanno scaricato (almeno in parte)
+                    canLogout = True
+                    partDown = 0
+                    for file in listFile:
+                        listSsId = Utility.findFile(ssId, file[0][0], None, 5)
 
-                        # Controllo nel resto dei risultati se e presente lo stesso MD5
-                        for j in range(i+1, len(result)):
-                            if md5List[numMd5][0] == result[j][3]:
-                                peerList.append(result[j][1], result[j][2])
-                                numPeer += 1
-                        md5List[numMd5][2] = numPeer
-                        numMd5 += 1
+                        # Se nessun altro peer ha lo stesso file non posso effettuare il logout
+                        if len(listSsId) == 0:
+                            canLogout = False
 
-                # Compongo il messaggio di ritorno stile upload
-                mess = ("AFIN" + '{:0>3}'.format(len(md5List))).encode()
-                self.write(mess)
-
-                # Ora scorro entrambe le strutture compilate in precedenza così compilo il messaggio di risposta
-                j = 0
-                for i in range(0,len(md5List)):
-                    # Preparo per l'invio MD5 NAME NumPeer
-                    self.write((md5List[i][0] + md5List[i][1] + md5List[i][2]).encode())
-                    logging.debug('messaggio nel buffer pronto')
-
-                    # Ora devo inserire nel messaggio tutti i peer che hanno il file
-                    for k in range (0, md5List[i][2]):
-                        self.write(peerList[j][0] + peerList[j][1])
-                        j += 1
-
-                self.shutdown()
-
-            elif command == "AFIN":
-                numMd5 = fields[0]
-
-                # Leggo MD5 NAME NUM PEER dal socket
-                for i in range(0, numMd5):
-                    tmp = self.recv(119)  # leggo la lunghezza del chunk
-                    while len(tmp) < 119:
-                        tmp += self.recv(119 - len(tmp))
-                        if len(tmp) == 0:
-                            raise Exception("Socket close")
-
-                    # Eseguo controlli di coerenza su ciò che viene ricavato dal socket
-                    if not tmp[-3:].decode(errors='ignore').isnumeric():
-                        raise Exception("Packet loss")
-
-                    # Salvo cie che e stato ricavato in ListFindFile
-                    Utility.listFindFile.append([tmp[:16].decode(), tmp[16:-3].decode(), int(tmp[-3:].decode())])
-
-                    # Ottengo la lista dei peer che hanno lo stesso md5
-                    numPeer = Utility.listFindFile[Utility.numFindFile][2]
-                    for j in range(0, numPeer):
-
-                        # Leggo i dati di ogni peer dal socket
-                        buffer = self.recv(60)  # Leggo il contenuto del chunk
-                        while len(buffer) < 60:
-                            tmp = self.recv(60 - len(buffer))
-                            buffer += tmp
-                            if len(tmp) == 0:
-                                raise Exception("Socket close")
-
-                        # Salvo ciò che e stato ricavato in Peer List
-                        Utility.listFindPeer.append([tmp[:55].decode(), int(tmp[-5:].decode())])
-
-            elif command == "QUER":
-                msgRet = 'AQUE'
-                # Prendo i campi del messaggio ricevuto
-                pkID = fields[0]
-                ipDest = fields[1]
-                portDest = fields[2]
-                ttl = fields[3]
-                name = fields[4]
-
-                # Controllo se il packetId e già presente se e presente non rispondo alla richiesta
-                # E non la rispedisco
-                if not Utility.database.checkPkt(pkID):
-                    Utility.database.addPkt(pkID)
-                    # Esegue la risposta ad una query
-                    msgRet = msgRet + pkID
-                    ip = Utility.MY_IPV4 + '|' + Utility.MY_IPV6
-                    port = '{:0>5}'.format(Utility.PORT)
-                    msgRet = msgRet + ip + port
-                    lst = Utility.database.findMd5(name.strip(' '))
-                    for i in range(0, len(lst)):
-                        name = Utility.database.findFile(None,lst[i][0],2)
-                        r = msgRet
-                        r = r + lst[i][0] + str(name[0][0]).ljust(100, ' ')
-                        t1 = Sender(r, ipDest, portDest)
-                        t1.run()
-
-                    # controllo se devo divulgare la query
-                    if int(ttl) >= 1:
-                        ttl = '{:0>2}'.format(int(ttl) - 1)
-                        msg = "QUER" + pkID + ipDest + portDest + ttl + name
-                        lista = Utility.database.listSuperNode()
-                        if len(lista) > 0:
-                            t2 = SenderAll(msg, lista)
-                            t2.run()
-
-            # Salvo il risultato in una lista di risultati
-            elif command=="AQUE":
-                if Utility.database.checkPkt(fields[0]):
-                    Utility.listResultFile.append(fields)
-
-            #Procedura LOGI
-            elif command=='LOGI':
-                # solo il supernodo risponde a una LOGI
-                if Utility.superNodo:
-                    ip=fields[0]
-                    port=fields[1]
-                    try:
-                        # se il peer e presente gli do il suo vecchio sessionId altrimenti uno nuovo
-                        l=Utility.database.findPeer('',ip,port,1)
-                        if len(l)>0:
-                            ssID=l[0][0]
+                        # Per ciascun peer devo ottenere l'elenco delle parti che possiedono
                         else:
-                            ssID=Utility.generateId(16)
-                        Utility.database.addPeer(ssID,ip,port)
-                    except Exception as e:
-                        ssID='0'*16
+                            listParts = []
+                            for peer in listSsId:
+                                tmp = Utility.database.findPartForMd5AndSessionId(peer, file[0][0])
+                                listParts.append(tmp)
 
-                    msgRet='ALGI'+ssID
-                    t=Sender(msgRet,ip,port)
-                    t.start()
+                            # Ricavo ora il numero delle parti del file per effettuare il controllo successivo
+                            nParts = file[0][2]//file[0][3]     #file[0][2] = LENFILE
+                            if file[0][2] % file[0][3] != 0:    #file[0][3] = LENPART
+                                nParts += 1
 
-            # Procedura ALGI
-            elif command=='ALGI':
-                # Solo il peer deve elaborare una algi
-                if not Utility.superNodo and Utility.sessionId=='':
-                    # controllo se ho ricevuto un sessionId valido se si lo salvo altrimenti no
-                    s='0'*16
-                    ssID=fields[0]
-                    if ssID==s:
-                        Utility.ipSuperNodo=''
-                        Utility.portSuperNodo=''
+                            # Conto quante parti sono state scaricate almeno una volta (caso NLOG) mi è comodo farlo qui
+                            partDown += Utility.partCounter(listParts, nParts)
+
+                            # Ora devo controllare che tra tutti i peer, il file possa essere disponibile completamente
+                            if not Utility.partChecker(listParts, nParts):
+                                canLogout = False
+
+                    # Se si può effettuare il logout allora preparo il messaggio con le parti dei file in possesso
+                    if canLogout:
+                        partOwn = 0
+                        for file in listFile:
+                            tmp = Utility.database.findPartForMd5AndSessionId(peer, file[0][0])
+                            partOwn += tmp.count("1")
+
+                        # Rimuovo i file e le parti del file dal database
+                        Utility.database.removeAllFileForSessionId(ssId)
+
+                        # Preparo ora il messaggio di ritorno ALOG
+                        msgRet = "ALOG" + str(partOwn).zfill(10)
+
+                    # In caso contrario invio le parti effettivamente scaricate dagli altri peer
                     else:
-                        Utility.sessionId=ssID
+                        msgRet = "NLOG" + str(partDown).zfill(10)
 
-            #Procedura ADFF
-            elif command=='ADFF':
-                # solo il supernodo deve elaborare una adff
-                if Utility.superNodo:
-                    ssID=fields[0]
-                    md5=fields[1]
-                    name=fields[2]
-                    # controllo se il sessionId e registrato nel database
-                    # se si aggiungo il file al database
-                    l=Utility.database.findPeer(ssID,'','',2)
-                    if len(l)>0:
-                        Utility.database.addFile(ssID,name,md5)
-
-            # Procedura DEFF
-            elif command=='DEFF':
-                # solo il supernodo deve elaborare una deff
-                if Utility.superNodo:
-                    ssID=fields[0]
-                    md5=fields[1]
-                    # controllo se il sessionId e registrato nel database
-                    # se si rimuovo il file al database
-                    l=Utility.database.findPeer(ssID,'','',2)
-                    if len(l)>0:
-                        Utility.database.removeFile(ssID,md5)
-
-            # Procedura LOGO
-            elif command=='LOGO':
-                # solo il supernodo deve elaborare una richiesta logo
-                if Utility.superNodo:
-                    ssID=fields[0]
-                    # controllo se il sessionId e nel database
-                    l=Utility.database.findPeer(ssID,'','',2)
-                    if len(l)>0:
-                        # se il sessionId e presente rimuovo i suoi file e ritorno il messaggio ALGO
-                        ip=l[0][0]
-                        port=l[0][1]
-                        #cancello tutti i file di quel sessionId
-                        canc=Utility.database.removeAllFileForSessionId(ssID)
-                        #cancello il peer dalla tabella dei peer
-                        Utility.database.removePeer(ssID)
-                        #Comunico al peer il messaggio di ritorno
-                        msgRet='ALGO'+'{:0>3}'.format(canc)
-                        t=Sender(msgRet,ip,port)
-                        t.start()
-
-            # Procedura ALGO
-            elif command=='ALGO':
-                # solo il peer deve elaborare la ALGO
-                if not Utility.superNodo:
-                    #Azzero le variabili e stampo
-                    delete=fields[0]
-                    Utility.sessionId=''
-                    Utility.ipSuperNodo=''
-                    Utility.portSuperNodo=''
-                    print('Logout effetuato, cancellati: '+delete)
-
-            # Procedura SUPE
-            elif command=="SUPE":
-                pkID=fields[0]
-
-                # Controllo di non aver gia' ricevuto questa richiesta di SUPE
-                if Utility.database.checkPkt(pkID)==False:
-                    Utility.database.addPkt(pkID)
-
-                    # Se sono un supernodo rispondo con ASUP
-                    if Utility.superNodo:
-                        ip=Utility.MY_IPV4+"|"+Utility.MY_IPV6
-                        port='{:0>5}'.format(Utility.PORT)
-                        msgRet="ASUP"+pkID+ip+port
-                        t=Sender(msgRet,fields[1],fields[2])
-                        t.start()
-
-                    # Decremento il ttl e controllo se devo inviare il SUPE
-                    ttl = int(fields[3])-1
-                    if ttl > 0:
-                        ttl='{:0>2}'.format(ttl)
-                        msg="SUPE"+pkID+fields[1]+fields[2]+ttl
-
-                        # Inoltro a tutti i peer
-                        listaP=Utility.database.listPeer(2)
-                        if len(listaP)>0:
-                            tP = SenderAll(msg,listaP)
-                            tP.run()
-
-                        # Inoltro a tutti i supernodi
-                        listaS=Utility.database.listSuperNode()
-                        if len(listaS)>0:
-                            tS = SenderAll(msg,listaS)
-                            tS.run()
-
-            # Procedura ASUP
-            elif command=="ASUP":
-                pkID=fields[0]
-                ip=fields[1]
-                port=fields[2]
-
-                # Verifico che il pacchetto ricevuto sia corrispondente ad una mia SUPE
-                if Utility.database.checkPkt(pkID)==True:
-
-                    # Inserisco il supernodo nel db
-                    Utility.database.addSuperNode(ip,port)
-
-                    # Procedura per la visualizzazione dei supernodi quando ci si vuole collegare ad un supernodo
-                    if Utility.superNodo==False:
-
-                        # Verifico che il supernodo non sia gia' stato considerato
-                        findPeer=False
-                        for i in range(0,len(Utility.listFindSNode)):
-                            if Utility.listFindSNode[i][1]==ip and Utility.listFindSNode[i][2]==port:
-                                findPeer=True
-
-                        # Se il pacchetto ASUP contiene un indirizzo di supernodo non ancora considerato
-                        #   lo aggiungo ai supernodi a cui si puo' collegare il peer
-                        if not findPeer:
-                            Utility.numFindSNode+=1
-                            Utility.listFindSNode.append(fields)
-                            print(str(Utility.numFindSNode) + " " + ip + " " + port)
+                # Invio il messaggio di ritorno
+                self.client.sendall(msgRet.encode())
 
             else:
-                logging.debug('ricevuto altro')
+                resp = None
+                running = False
 
             # invio della risposta creata controllando che sia valida
-            self.lock.release()
             #print(resp+'\r\n')
             #if resp is not None:
             #    self.client.sendall(resp.encode())
-            #print("comando inviato: " + resp)
-            time.sleep(1)
+            print("comando inviato: " + command)
+
             # ricezione del dato e immagazzinamento fino al max
-            data = self.client.recv(2048)
+            #data = self.client.recv(2048)
 
         # fine del ciclo
 
         # chiude la connessione quando non ci sono più dati
         print("Chiusura socket di connessione")
         # chiude il client
+        self.client.shutdown(1)
         self.client.close()
