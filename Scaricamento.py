@@ -67,8 +67,8 @@ class Scaricamento:
                 # ordino la lista mettendo all'inizio le parti possedute da meno peer
                 listaPart.sort(key=len)
                 # Prendo i primi 10 o meno
-                numDown=0
-                numDownParalleli=10
+                nDown=0
+                Utility.numDown=Utility.numDownParalleli
                 for i in  range(0,len(listaPart)):
                     # Prendo la parte interessata ed eseguo il download
                     nPeer=len(listaPart[i])-1
@@ -80,12 +80,14 @@ class Scaricamento:
                     #Chiamata al download
                     Request.download(datiDown[0],datiDown[1],md5,name,parte+1) #Il piu uno e perche il download vuole cosi
                     #Controllo se ho gia fatto almeno 10 download
-                    if numDown>=numDownParalleli:
+                    if nDown>=Utility.numDownParalleli:
                         break
 
                 # attendo un tempo per rifare la fchu
                 # questo è un cilco di attesa attivo
-                a=time.strftime("%M:%S")
+                Utility.semaforo.acquire()
+
+                '''a=time.strftime("%M:%S")
                 a=a.split(':')
                 a=int(a[0])*60+int(a[1])
                 attesa=60 # Secondi di attesa
@@ -94,7 +96,7 @@ class Scaricamento:
                     b=time.strftime("%M:%S")
                     b=b.split(':')
                     b=int(b[0])*60+int(b[1])
-                    diff=b-a
+                    diff=b-a'''
 
                 #conto il numero di parti scaricate, interrogando il database
                 myPart=Utility.database.findPartForMd5AndSessionId(Utility.SessionID,md5)

@@ -26,6 +26,9 @@ class Utility:
     LEN_PART=262144
     SessionID = ''
     listLastSerch=[]
+    numDown=0
+    numDownParalleli=10
+    semaforo=threading.Semaphore(1)
     # Todo controllare se queste variabili vengono usate e nel caso eliminare quelle inutilizzate
     listFindPeer = []
     listFindFile = []
