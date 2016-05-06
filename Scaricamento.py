@@ -85,14 +85,17 @@ class Scaricamento:
 
                 # attendo un tempo per rifare la fchu
                 # questo è un cilco di attesa attivo
-                Utility.semaforo.acquire()
+
+                #Utility.semaforo.acquire()
+
+                time.sleep(60)
 
                 '''a=time.strftime("%M:%S")
                 a=a.split(':')
                 a=int(a[0])*60+int(a[1])
                 attesa=60 # Secondi di attesa
                 diff=0
-                while diff<attesa:
+                while diff<Utility.attesa:
                     b=time.strftime("%M:%S")
                     b=b.split(':')
                     b=int(b[0])*60+int(b[1])
