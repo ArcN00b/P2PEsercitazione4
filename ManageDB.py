@@ -6,6 +6,7 @@
 import sqlite3
 import time
 
+# TODO testare i metodi del database
 class ManageDB:
 
     # Metodo che inizializza il database
@@ -17,24 +18,20 @@ class ManageDB:
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            # Creo la tabella dei supernodi e la cancello se esiste
-            c.execute("DROP TABLE IF EXISTS SUPERNODES")
-            c.execute("CREATE TABLE SUPERNODES (IP TEXT NOT NULL, PORT TEXT NOT NULL)")
-
             # Creo la tabella dei peer e la cancello se esiste
             c.execute("DROP TABLE IF EXISTS PEERS")
             c.execute("CREATE TABLE PEERS (SESSIONID TEXT NOT NULL, IP TEXT NOT NULL, PORT TEXT NOT NULL)")
 
             # Creo la tabella dei file e la cancello se esiste
             c.execute("DROP TABLE IF EXISTS FILES")
-            c.execute("CREATE TABLE FILES (SESSIONID TEXT NOT NULL, NAME TEXT NOT NULL, MD5 TEXT NOT NULL)")
+            c.execute("CREATE TABLE FILES (SESSIONID TEXT NOT NULL, NAME TEXT NOT NULL, MD5 TEXT NOT NULL, LENFILE TEXT NOT NULL, LENPART TEXT NOT NULL)")
 
             # Creo la tabella dei packetId e la cancello se esiste
-            c.execute("DROP TABLE IF EXISTS PACKETS")
-            c.execute("CREATE TABLE PACKETS (ID TEXT NOT NULL, DATE INTEGER NOT NULL)")
+            c.execute("DROP TABLE IF EXISTS PARTS")
+            c.execute("CREATE TABLE PARTS (MD5 TEXT NOT NULL, SESSIONID TEXT NOT NULL,PART TEXT NOT NULL)")
 
             # Imposto il tempo di cancellazione dei packets
-            self.deleteTime = 60
+            self.deleteTime = 10
 
             conn.commit()
 
@@ -110,62 +107,6 @@ class ManageDB:
             if conn:
                 conn.close()
 
-    # Metodo che aggiunge un supernodo
-    def addSuperNode(self, ip, port):
-        try:
-
-            # Creo la connessione al database e creo un cursore ad esso
-            conn = sqlite3.connect("data.db")
-            c = conn.cursor()
-
-            # Aggiungo il supernodo se non e' presente
-            c.execute("SELECT COUNT(IP) FROM SUPERNODES WHERE IP=:INDIP AND PORT=:PORTA", {"INDIP": ip, "PORTA": port})
-            count = c.fetchall()
-
-            if(count[0][0] == 0):
-                c.execute("INSERT INTO SUPERNODES (IP, PORT) VALUES (?,?)" , (ip, port))
-            conn.commit()
-
-        except sqlite3.Error as e:
-
-            # Gestisco l'eccezione
-            if conn:
-                conn.rollback()
-
-            raise Exception("Errore - addSuperNode: %s:" % e.args[0])
-
-        finally:
-
-            # Chiudo la connessione
-            if conn:
-                conn.close()
-
-    # Metodo ritorna la lista di supernodi
-    def listSuperNode(self):
-        count=None
-        try:
-            # Connessione
-            conn=sqlite3.connect("data.db")
-            c=conn.cursor()
-
-            c.execute("SELECT * FROM SUPERNODES")
-            count=c.fetchall()
-
-            conn.commit()
-
-        except sqlite3.Error as e:
-            # Gestisco l'eccezione
-            if conn:
-                conn.rollback()
-
-            raise Exception("Errore - listSuperNode: %s:" % e.args[0])
-        finally:
-            # Chiudo la connessione
-            if conn:
-                conn.close()
-            if count is not None:
-                return count
-
     # Metodo che ritorna la lista dei peer
     def listPeer(self,flag):
         count=None
@@ -182,8 +123,6 @@ class ManageDB:
                 count=c.fetchall()
 
             conn.commit()
-
-            return conn
 
         except sqlite3.Error as e:
             # Gestisco l'eccezione
@@ -229,7 +168,7 @@ class ManageDB:
                 return count
 
     # Metodo che aggiunge un file
-    def addFile(self,sessionId,fileName,Md5):
+    def addFile(self,sessionId,fileName,Md5,lenFile,lenPart):
         try:
 
             # Creo la connessione al database e creo un cursore ad esso
@@ -241,9 +180,9 @@ class ManageDB:
             count = c.fetchall()
 
             if(len(count)==0):
-                c.execute("UPDATE FILES SET NAME=:NOME WHERE MD5=:COD" , {"NOME": fileName, "COD": Md5})
-                conn.commit()
-                c.execute("INSERT INTO FILES (SESSIONID, NAME, MD5) VALUES (?,?,?)" , (sessionId, fileName, Md5))
+                #c.execute("UPDATE FILES SET NAME=:NOME WHERE MD5=:COD" , {"NOME": fileName, "COD": Md5})
+                #conn.commit()
+                c.execute("INSERT INTO FILES (SESSIONID, NAME, MD5,LENFILE,LENPART) VALUES (?,?,?,?,?)" , (sessionId, fileName, Md5,lenFile,lenPart))
                 conn.commit()
 
         except sqlite3.Error as e:
@@ -303,6 +242,7 @@ class ManageDB:
 
             if (count[0][0]>0):
                 c.execute("DELETE FROM FILES WHERE SESSIONID=:SID", {"SID": sessionId})
+                c.execute("DELETE FROM PARTS WHERE SESSIONID=:SID", {"SID": sessionId})
                 conn.commit()
 
         except sqlite3.Error as e:
@@ -329,7 +269,7 @@ class ManageDB:
             conn=sqlite3.connect("data.db")
             c=conn.cursor()
 
-            c.execute("SELECT MD5,NAME FROM FILES WHERE SESSIONID=:SID",{"SID":sessionId})
+            c.execute("SELECT MD5,NAME,LENFILE,LENPART FROM FILES WHERE SESSIONID=:SID",{"SID":sessionId})
             count=c.fetchall()
 
             conn.commit()
@@ -374,7 +314,7 @@ class ManageDB:
                 return count
 
     # Metodo per ricerca nome file da sessionId e Md5
-    def findFile(self,sessionId,Md5,flag):
+    def findFile(self,sessionId,Md5,name,flag):
         count=None
         try:
             # Connessione
@@ -382,11 +322,20 @@ class ManageDB:
             c=conn.cursor()
 
             if flag == 1:
-                c.execute("SELECT NAME FROM FILES WHERE SESSIONID=:SID AND MD5=:M",{"SID":sessionId,"M":Md5})
+                c.execute("SELECT NAME,LENPART FROM FILES WHERE SESSIONID=:SID AND MD5=:M",{"SID":sessionId,"M":Md5})
                 count=c.fetchall()
             elif flag == 2:
-                c.execute("SELECT NAME FROM FILES WHERE MD5=:M",{"M":Md5})
+                c.execute("SELECT SESSIONID,NAME FROM FILES WHERE MD5=:M",{"M":Md5})
                 count=c.fetchall()
+            elif flag == 3:
+                c.execute("SELECT * FROM FILES WHERE NAME LIKE '%" + name + "%' ")
+                count = c.fetchall()
+            elif flag == 4:
+                c.execute("SELECT LENFILE,LENPART FROM FILES WHERE MD5=:M",{"M":Md5})
+                count = c.fetchall()
+            elif flag == 5:
+                c.execute("SELECT SESSIONID FROM FILES WHERE SESSIONID!=SID MD5=:M",{"SID":sessionId,"M": Md5})
+                count = c.fetchall()
 
             conn.commit()
 
@@ -412,7 +361,7 @@ class ManageDB:
             c = conn.cursor()
 
             # Cerca il file
-            c.execute("SELECT DISTINCT MD5 FROM FILES WHERE NAME LIKE '%" + name + "%' ")
+            c.execute("SELECT MD5,NAME,LENFILE,LENPART,SESSIONID FROM FILES WHERE NAME LIKE '%" + name + "%' ")
             conn.commit()
 
             result = c.fetchall()
@@ -428,23 +377,75 @@ class ManageDB:
             if conn:
                 conn.close()
 
-    # Metodo che aggiunge un packetId
-    def addPkt(self, id):
+    # Metodo per aggiungere un file delle parti alla tabella
+    def addPart(self,Md5,sessionId,parte):
         try:
 
             # Creo la connessione al database e creo un cursore ad esso
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            # Rimuovo i packets meno recenti ed aggiungo il packet
-            c.execute("DELETE FROM PACKETS WHERE DATE < datetime('now', 'LOCALTIME', ?)" , ("-" + str(self.deleteTime) + " SECONDS",) )
+            # Aggiungo il peer se non e' presente
+            c.execute("SELECT * FROM PARTS WHERE MD5=:M AND SESSIONID=:SSID", {"M": Md5, "SSID": sessionId})
+            count = c.fetchall()
+
+            if(len(count)==0):
+                c.execute("INSERT INTO PARTS (MD5, SESSIONID, PART) VALUES (?,?,?)" , (Md5,sessionId, parte))
             conn.commit()
 
-            # Inserisco il packet solamento se non presente
-            c.execute("SELECT COUNT(ID) FROM PACKETS WHERE ID=:COD", {"COD": id})
+        except sqlite3.Error as e:
+
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
+
+            raise Exception("Errore - addPart: %s:" % e.args[0])
+
+        finally:
+
+            # Chiudo la connessione
+            if conn:
+                conn.close()
+
+    # Metodo per rimuovere tutti le parti da sessionId
+    def removePart(self,sessionId):
+        try:
+
+            # Creo la connessione al database e creo un cursore ad esso
+            conn = sqlite3.connect("data.db")
+            c = conn.cursor()
+
+            c.execute("SELECT * FROM PARTS WHERE SESSIONID=:SID", {"SID": sessionId})
             count = c.fetchall()
-            if(count[0][0] == 0):
-                c.execute("INSERT INTO PACKETS (ID, DATE) VALUES ( ?, DATETIME('NOW', 'LOCALTIME'))" , (id,))
+
+            if len(count)>0:
+                c.execute("DELETE FROM PARTS WHERE SESSIONID=:SID", {"SID": sessionId})
+                conn.commit()
+
+        except sqlite3.Error as e:
+
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
+
+            raise Exception("Errore - removeParts: %s:" % e.args[0])
+
+        finally:
+
+            # Chiudo la connessione
+            if conn:
+                conn.close()
+
+    # Metodo per cercare la parte dato un sessionID
+    def findPartForSessionID(self,sessionId):
+        try:
+
+            # Creo la connessione al database e creo un cursore ad esso
+            conn = sqlite3.connect("data.db")
+            c = conn.cursor()
+
+            c.execute("SELECT MD5,PART FROM PARTS WHERE SESSIONID=:SID", {"SID": sessionId})
+            count = c.fetchall()
 
             conn.commit()
 
@@ -454,41 +455,97 @@ class ManageDB:
             if conn:
                 conn.rollback()
 
-            raise Exception("Errore - addPkt: %s:" % e.args[0])
+            raise Exception("Errore - findPartForSessionID: %s:" % e.args[0])
 
         finally:
 
             # Chiudo la connessione
             if conn:
                 conn.close()
+            if count is not None:
+                return count
 
-    # Metodo che ricerca un packetId, ritorna True se e' presente, altrimenti False
-    def checkPkt(self, id):
+    # Metodo per cercare una parte dato un md5
+    def findPartForMd5(self,Md5):
         try:
 
             # Creo la connessione al database e creo un cursore ad esso
             conn = sqlite3.connect("data.db")
             c = conn.cursor()
 
-            # Elimino i packets meno recenti e verifico se e' presente il packet
-            c.execute("DELETE FROM PACKETS WHERE DATE < datetime('now', 'LOCALTIME', ?)" , ("-" + str(self.deleteTime) + " SECONDS",) )
-            conn.commit()
-            c.execute("SELECT COUNT(ID) FROM PACKETS WHERE ID=:COD" , {"COD": id} )
-            conn.commit()
+            c.execute("SELECT SESSIONID,PART FROM PARTS WHERE MD5=:M", {"M": Md5})
+            count = c.fetchall()
 
-            count  = c.fetchall()
-
-            # Ritorno True se il packet e' presente, altrimenti False
-            if(count[0][0] == 1):
-                return True
-            elif(count[0][0] == 0):
-                return False
-            else:
-                raise Exception("Errore - checkPkt: packetId multipli con stesso id")
+            conn.commit()
 
         except sqlite3.Error as e:
 
-            raise Exception("Errore - checkPkt: %s:" % e.args[0])
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
+
+            raise Exception("Errore - findPartForMd5: %s:" % e.args[0])
+
+        finally:
+
+            # Chiudo la connessione
+            if conn:
+                conn.close()
+            if count is not None:
+                return count
+
+    # Ritorna la parte dato un md5 e un sessionId
+    def findPartForMd5AndSessionId(self,SessionId,Md5):
+        try:
+
+            # Creo la connessione al database e creo un cursore ad esso
+            conn = sqlite3.connect("data.db")
+            c = conn.cursor()
+
+            c.execute("SELECT PART FROM PARTS WHERE MD5=:M AND SESSIONID=:SSID", {"M": Md5,"SSID":SessionId})
+            count = c.fetchall()
+
+            conn.commit()
+
+        except sqlite3.Error as e:
+
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
+
+            raise Exception("Errore - findPartForMd5AndSessionId: %s:" % e.args[0])
+
+        finally:
+
+            # Chiudo la connessione
+            if conn:
+                conn.close()
+            if count is not None:
+                return count
+
+    # Metodo per aggiornare la parte dati sessionId e Md5
+    def updatePart(self,sessionId,md5,part):
+        try:
+
+            # Creo la connessione al database e creo un cursore ad esso
+            conn = sqlite3.connect("data.db")
+            c = conn.cursor()
+
+            # Modifico il peer se non e' presente
+            c.execute("SELECT * FROM PARTS WHERE MD5=:M AND SESSIONID=:SSID", {"M": md5, "SSID": sessionId})
+            count = c.fetchall()
+
+            if(len(count)>0):
+                c.execute("UPDATE PARTS SET PART=:P WHERE MD5=:M AND SESSIONID=:SSID" , {"P": part, "M": md5,"SSID":sessionId} )
+                conn.commit()
+
+        except sqlite3.Error as e:
+
+            # Gestisco l'eccezione
+            if conn:
+                conn.rollback()
+
+            raise Exception("Errore - updatePart: %s:" % e.args[0])
 
         finally:
 
@@ -575,3 +632,12 @@ for row in all_rows:
     print('{0} {1} {2}'.format(row[0],row[1],row[2]))
 print("")
 '''
+'''
+m=ManageDB()
+m.addPart('12345','12345','111110001')
+m.addPart('12345','12345','111110001')
+m.updatePart('12345','12345','111111111')
+m.updatePart('123456','12345','111111111')
+m.removePart('12345')
+m.addPart('12345','12345','111110001')'''
+
