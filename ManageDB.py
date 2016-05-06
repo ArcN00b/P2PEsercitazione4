@@ -6,6 +6,7 @@
 import sqlite3
 import time
 
+# TODO testare i metodi del database
 class ManageDB:
 
     # Metodo che inizializza il database

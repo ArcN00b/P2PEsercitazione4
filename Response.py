@@ -1,4 +1,14 @@
+<<<<<<< Updated upstream
 import random
+=======
+#!/usr/bin/python3
+
+from Parser import *
+from Utility import *
+import random
+import time
+import logging
+>>>>>>> Stashed changes
 
 #Tutti i metodi eseguono le operazioni sul database
 #Necessitano quindi che sia passato il database in ingresso
@@ -9,6 +19,7 @@ class Response:
     @staticmethod
     def login(database,ip,port):
         try:
+<<<<<<< Updated upstream
             tmp='ALGI'
             #il metodo ricerca un client per id e port e se presente ritorna il sessionID altrimenti -1
             if (len(database.findClient('',ip,port,'1')) !=0):
@@ -29,9 +40,22 @@ class Response:
 
     #Metodo per la generazione della risposta ad una richiesta di add
     #Ritorna una stringa rappresentante la risposta
+=======
+            data = sock_end.recv(512)
+            command, fields = Parser.parse(data)
+
+            ## ritorno del sessionID
+            return fields[0]
+
+        except Exception as e:
+            logging.debug("ERROR on Receive " + str(e))
+
+    ## metodo che gestisce la risposta della logout
+>>>>>>> Stashed changes
     @staticmethod
     def addFile(database,fileMd5,sessionId,fileName):
         try:
+<<<<<<< Updated upstream
             tmp='AADD'
             #controllo se il fileName ha almeno 100 caratteri se non ne ha ne aggiungo a destra
             nome=fileName
@@ -46,6 +70,10 @@ class Response:
             return tmp
         except Exception:
             raise ('Error')
+=======
+            data = sock_end.recv(512)
+            command, fields = Parser.parse(data)
+>>>>>>> Stashed changes
 
     @staticmethod
     def remove(database,fileMd5,sessionId):
@@ -57,6 +85,7 @@ class Response:
                 n=999
                 tmp=tmp+'{:0>3}'.format(n)
             else:
+<<<<<<< Updated upstream
                 #chiamo il metodo per la rimozione del file
                 database.removeFile(fileMd5,sessionId)
                 #metodo che conta quanti file hanno quel md5
@@ -66,6 +95,16 @@ class Response:
         except Exception:
             raise ('Error')
 
+=======
+                n_part_own = fields[0]
+                return True, n_part_own
+
+        except Exception as e:
+            logging.debug("ERROR on Receive logout_ack" + str(e))
+
+    ## metodo per ricevere la risposta dalla look
+    ## quindi si riceve 'ALOO'
+>>>>>>> Stashed changes
     @staticmethod
     def logout(database,sessionId):
         try:
