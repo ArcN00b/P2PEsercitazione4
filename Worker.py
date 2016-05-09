@@ -63,11 +63,12 @@ class Worker(threading.Thread):
                     else:
                         ssId=Utility.generateId(16)
                         msgRet=msgRet+ssId
+                        Utility.database.addPeer(ssId,ip,port)
                 except:
                     ssId='0'*16
                     msgRet=msgRet+ssId
                 finally:
-                    self.client.sendall(msgRet.encode())
+                    self.client.send(msgRet.encode())
 
             elif command == "ALGI":
                 True
@@ -94,7 +95,7 @@ class Worker(threading.Thread):
                         parte='1'*numPart
                     else:
                         numPart8=(numPart//8)+1
-                        parte='0'*numPart+'0'*(8-(numPart%8))
+                        parte='1'*numPart+'0'*(8-(numPart%8))
 
                     Utility.database.addFile(ssId,name,md5,lFile,lPart)
                     Utility.database.addPart(md5,ssId,parte)
@@ -234,6 +235,7 @@ class Worker(threading.Thread):
                 msgRet = "APAD" + str(partOwn).zfill(8)
                 self.client.sendall(msgRet.encode())
 
+
             elif command == "LOGO":
                 # Todo da testare
 
@@ -244,13 +246,14 @@ class Worker(threading.Thread):
                 # Se il peer non ha aggiunto file allora posso effettuare logout
                 if(len(listFile) == 0):
                     msgRet = "ALOG" + '0'.zfill(10)
+                    Utility.database.removePeer(ssId)
                 else:
 
                     # Per ciascun file devo controllare che ci siano altri peer che l'hanno scaricato (almeno in parte)
                     canLogout = True
                     partDown = 0
                     for file in listFile:
-                        listSsId = Utility.findFile(ssId, file[0][0], None, 5)
+                        listSsId = Utility.database.findFile(ssId, file[0][0], None, 5)
 
                         # Se nessun altro peer ha lo stesso file non posso effettuare il logout
                         if len(listSsId) == 0:
@@ -284,6 +287,7 @@ class Worker(threading.Thread):
 
                         # Rimuovo i file e le parti del file dal database
                         Utility.database.removeAllFileForSessionId(ssId)
+                        Utility.database.removePeer(ssId)
 
                         # Preparo ora il messaggio di ritorno ALOG
                         msgRet = "ALOG" + str(partOwn).zfill(10)
@@ -304,16 +308,17 @@ class Worker(threading.Thread):
             #if resp is not None:
             #    self.client.sendall(resp.encode())
             print("comando inviato: " + command)
-
-            # chiude la connessione quando non ci sono più dati
-            print("Chiusura socket di connessione")
-            # chiude il client
             self.client.shutdown(1)
             self.client.close()
+            running=False
 
             # ricezione del dato e immagazzinamento fino al max
             #data = self.client.recv(2048)
 
+
         # fine del ciclo
 
+        # chiude la connessione quando non ci sono più dati
+        print("Chiusura socket di connessione")
+        # chiude il client
 

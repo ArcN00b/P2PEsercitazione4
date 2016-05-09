@@ -334,7 +334,7 @@ class ManageDB:
                 c.execute("SELECT LENFILE,LENPART FROM FILES WHERE MD5=:M",{"M":Md5})
                 count = c.fetchall()
             elif flag == 5:
-                c.execute("SELECT SESSIONID FROM FILES WHERE SESSIONID!=SID MD5=:M",{"SID":sessionId,"M": Md5})
+                c.execute("SELECT SESSIONID FROM FILES WHERE SESSIONID!=:SID AND MD5=:M",{"SID":sessionId,"M": Md5})
                 count = c.fetchall()
 
             conn.commit()
@@ -344,7 +344,7 @@ class ManageDB:
             if conn:
                 conn.rollback()
 
-            raise Exception("Errore - listFileForSessionId: %s:" % e.args[0])
+            raise Exception("Errore - findFile: %s:" % e.args[0])
         finally:
             # Chiudo la connessione
             if conn:
