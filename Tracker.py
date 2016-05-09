@@ -15,6 +15,7 @@ class Tracker(threading.Thread):
         self.database=database
         self.ipv4,self.ipv6=Utility.getIp(ip)
         self.port=porta
+        self.running = True
 
     def run(self):
         # Creo il socket ipv4, imposto l'eventuale riutilizzo, lo assegno all'ip e alla
@@ -43,7 +44,7 @@ class Tracker(threading.Thread):
         self.server_socket6.listen(5)
 
         #Ciclo continuo
-        while True:
+        while self.running:
             # Per non rendere accept() bloccante uso l'oggetto select con il metodo select() sui socket messi in ascolto
             print("server in ascolto")
             input_ready, read_ready, error_ready = select.select([self.server_socket4, self.server_socket6], [], [])
@@ -55,10 +56,19 @@ class Tracker(threading.Thread):
                 if s == self.server_socket4:
                     client_socket4, address4 = self.server_socket4.accept()
                     client_thread = Worker(client_socket4, self.database)
-                    client_thread.start()
+                    client_thread.run()
 
                 # Il client si è collegato tramite socket IPv6, accetto quindi la sua richiesta avviando il worker
                 elif s == self.server_socket6:
                     client_socket6, address6 = self.server_socket6.accept()
                     client_thread = Worker(client_socket6, self.database)
-                    client_thread.start()
+                    client_thread.run()
+
+    # Idealmente questo dovrebbe fermare il cliclo while sopra
+    #TODO da testare
+    def stop(self):
+        self.running = False
+        self.server_socket4.shutdown()
+        self.server_socket6.shutdown()
+        self.server_socket4.close()
+        self.server_socket6.close()

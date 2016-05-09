@@ -6,36 +6,30 @@ import socket
 import threading
 
 class Utility:
-    IPv4_TRACKER = "172.030.007.004"
-    IPv6_TRACKER = "fc00:0000:0000:0000:0000:0000:0007:0004"
+    IPv4_TRACKER = "172.030.007.001"
+    IPv6_TRACKER = "fc00:0000:0000:0000:0000:0000:0007:0001"
     IP_TRACKER = IPv4_TRACKER+'|'+IPv6_TRACKER
 
     PORT_TRACKER = 3000
 
-    IPV4_MY = "172.030.007.001"
-    IPV6_MY = "fc00:0000:0000:0000:0000:0000:0007:0001"
+    IPV4_MY = "172.030.007.003"
+    IPV6_MY = "fc00:0000:0000:0000:0000:0000:0007:0003"
     IP_MY = IPV4_MY+'|'+IPV6_MY
 
     PORT_MY = 12345
 
-
-    PATHDIR='/home/flavio/Scrivania/File/'
-    PATHTEMP='/home/flavio/Scrivania/File/Temp/'
+    PATHDIR = '/home/marco/seedfolder/'
+    PATHTEMP = '/home/marco/seedfolder/temp/'
 
     ## variabili condivise in piu' parti del programma
-    LEN_PART=262144
-    SessionID = ''
-    listLastSerch=[]
+    LEN_PART = 262144
+
+    sessionID = ''
+    listLastSearch=[]
     numDown=0
     numDownParalleli=10
     semaforo=threading.Semaphore(1)
     attesa=60 # Attesa prima di rieseguire una FCHU
-    # Todo controllare se queste variabili vengono usate e nel caso eliminare quelle inutilizzate
-    listFindPeer = []
-    listFindFile = []
-    listResultFile = []
-    numFindSNode=0
-    listFindSNode=[]
     database = ManageDB.ManageDB()
 
     # Metodo per trasformare un vettore di byte nella stringa di bit
@@ -92,8 +86,6 @@ class Utility:
     # Metodo per generare l'md5 di un file, va passato il percorso assoluto
     @staticmethod
     def generateMd5(path):
-
-        #path="/home/flavio/Scrivania/pippo.txt"
         # Inizializzo le variabili che utilizzerò
         f = open(path, 'rb')
         hash = hashlib.md5()
@@ -104,14 +96,13 @@ class Utility:
             hash.update(buf)
             buf = f.read(4096)
 
-        hash.update(Utility.IPV4_MY+'|'+Utility.IPV6_MY+str(Utility.PORT_MY))
+        hash.update((Utility.IPV4_MY+'|'+Utility.IPV6_MY+str(Utility.PORT_MY)).encode())
 
         # Return del digest
         return hash.hexdigest()
 
-        # Ritorna i due ip data la stringa generale
-        # Ritorna prima ipv4 e poi ipv6
-
+    # Ritorna i due ip data la stringa generale
+    # Ritorna prima ipv4 e poi ipv6
     @staticmethod
     def getIp(stringa):
         t = stringa.find('|')

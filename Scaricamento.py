@@ -30,22 +30,22 @@ class Scaricamento:
 
         parte='0'*numPart
         # aggiungo il file al database
-        Utility.database.addFile(Utility.SessionID,name,md5,lFile,lPart)
+        Utility.database.addFile(Utility.sessionID, name, md5, lFile, lPart)
         # aggiungo al database la stringa
-        Utility.database.addPart(md5,Utility.SessionID,parte)
+        Utility.database.addPart(md5, Utility.sessionID, parte)
         partiScaricate=0
         while partiScaricate!=numPart:
             valid_request=True
             try:
                 sock = Request.create_socket(Utility.IP_TRACKER,Utility.PORT_TRACKER)
                 # Invio messaggio FCHU
-                Request.fchu(sock,Utility.SessionID,md5)
+                Request.fchu(sock, Utility.sessionID, md5)
                 # gestisco la risposta dei AFCH, mi ritorna la lista dei peer che hanno fatto match
                 listaPeer=Response.fchu_ack(sock,numPart8,numPart)
                 # Chiudo la socket,non serve tenerla aperta
                 Response.close_socket(sock)
                 #Prendo dal database la situazione delle parti del mio file
-                myPart=Utility.database.findPartForMd5AndSessionId(Utility.SessionID,md5)
+                myPart=Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5)
                 myPart=myPart[0][0]
             except Exception as e:
                 print("Errore Aggiornamento parti, reinvio richiesta"+str(e))
@@ -102,5 +102,5 @@ class Scaricamento:
                     diff=b-a'''
 
                 #conto il numero di parti scaricate, interrogando il database
-                myPart=Utility.database.findPartForMd5AndSessionId(Utility.SessionID,md5)
+                myPart=Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5)
                 partiScaricate=myPart.count('1')

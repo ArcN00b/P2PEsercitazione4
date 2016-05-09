@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
 from Parser import *
+from Utility import *
 import random
 import time
 import logging
-from Utility import *
 
 #Tutti i metodi eseguono le operazioni sul database
 #Necessitano quindi che sia passato il database in ingresso
@@ -16,9 +16,8 @@ class Response:
     def login_ack(sock_end):
         try:
             data = sock_end.recv(512)
-            #data = data.encode()
             command, fields = Parser.parse(data)
-
+            logging.debug('ricevuto login_ack: ' + str(data))
             ## ritorno del sessionID
             return fields[0]
 
@@ -30,7 +29,6 @@ class Response:
     def logout_ack(sock_end):
         try:
             data = sock_end.recv(512)
-            #data = data.encode()
             command, fields = Parser.parse(data)
 
             if command == 'NLOG':
@@ -41,9 +39,10 @@ class Response:
                 return True, n_part_own
 
         except Exception as e:
-            logging.debug("ERROR on Receive " + str(e))
+            logging.debug("ERROR on Receive logout_ack" + str(e))
 
-    # Metodo per gestire una ALOO
+    ## metodo per ricevere la risposta dalla look
+    ## quindi si riceve 'ALOO'
     @staticmethod
     def look_ack(socket):
         lista=[]

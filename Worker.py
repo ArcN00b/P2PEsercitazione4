@@ -63,11 +63,12 @@ class Worker(threading.Thread):
                     else:
                         ssId=Utility.generateId(16)
                         msgRet=msgRet+ssId
+                        Utility.database.addPeer(ssId,ip,port)
                 except:
                     ssId='0'*16
                     msgRet=msgRet+ssId
                 finally:
-                    self.client.sendall(msgRet.encode())
+                    self.client.send(msgRet.encode())
 
             elif command == "ALGI":
                 True
@@ -94,7 +95,7 @@ class Worker(threading.Thread):
                         parte='1'*numPart
                     else:
                         numPart8=(numPart//8)+1
-                        parte='0'*numPart+'0'*(8-(numPart%8))
+                        parte='1'*numPart+'0'*(8-(numPart%8))
 
                     Utility.database.addFile(ssId,name,md5,lFile,lPart)
                     Utility.database.addPart(md5,ssId,parte)
@@ -165,18 +166,13 @@ class Worker(threading.Thread):
                 chunklen = 512
                 md5 = fields[0]
                 partNum = fields[1]
-                obj = Utility.database.findFile(Utility.SessionID, md5, None, 1)
+                obj = Utility.database.findFile(Utility.sessionID, md5, None, 1)
 
                 # Ora preparo il file per la lettura
                 if len(obj) > 0:
 
-                    # Controllo se il file è disponibile completamente o a parti
-                    if os.path.isfile(Utility.PATHDIR + str(obj[0][0]).strip()) > 0:
-                        filename = Utility.PATHDIR + str(obj[0][0]).strip()
-                        owned = True    #Se owned = true allora il file è disponibile completamente
-                    else:
-                        filename = Utility.PATHTEMP + str(obj[0][0]).strip() + partNum
-                        owned = False
+                    # Ricavo il nome del file
+                    filename = Utility.PATHTEMP + str(obj[0][0]).strip() + str(int(partNum))
 
                     # Calcolo in quanti chunk devo dividere la parte
                     lenPart = int(obj[0][1])
@@ -192,17 +188,11 @@ class Worker(threading.Thread):
 
                     # Apro il file in lettura e leggo il primo chunk della parte
                     f = open(filename, 'rb')
-
-                    # Se il file è completo devo portare avanti l'indice di lettura
-                    if owned:
-                        f.seek(int(partNum) * int(lenPart))
-
-                    # Leggo la parte intera
                     r = f.read(lenPart)
 
                     # Finchè non completo la parte o il file non termina
                     while len(r) > 0:
-                        mp=b''
+                        mp=bytes()
 
                         if len(r) > chunklen:
                             mp += r[:chunklen]
@@ -245,9 +235,6 @@ class Worker(threading.Thread):
                 msgRet = "APAD" + str(partOwn).zfill(8)
                 self.client.sendall(msgRet.encode())
 
-            elif command == "APAD":
-                True
-                # Todo da scrivere
 
             elif command == "LOGO":
                 # Todo da testare
@@ -259,14 +246,15 @@ class Worker(threading.Thread):
                 # Se il peer non ha aggiunto file allora posso effettuare logout
                 if(len(listFile) == 0):
                     msgRet = "ALOG" + '0'.zfill(10)
+                    Utility.database.removePeer(ssId)
                 else:
-                    
+
                     # Per ciascun file devo controllare che ci siano altri peer che l'hanno scaricato (almeno in parte)
                     canLogout = True
                     partDown = 0
                     for file in listFile:
-                        listSsId = Utility.findFile(ssId, file[0][0], None, 5)
-                            
+                        listSsId = Utility.database.findFile(ssId, file[0][0], None, 5)
+
                         # Se nessun altro peer ha lo stesso file non posso effettuare il logout
                         if len(listSsId) == 0:
                             canLogout = False
@@ -277,7 +265,7 @@ class Worker(threading.Thread):
                             for peer in listSsId:
                                 tmp = Utility.database.findPartForMd5AndSessionId(peer, file[0][0])
                                 listParts.append(tmp)
-                                        
+
                             # Ricavo ora il numero delle parti del file per effettuare il controllo successivo
                             nParts = file[0][2]//file[0][3]     #file[0][2] = LENFILE
                             if file[0][2] % file[0][3] != 0:    #file[0][3] = LENPART
@@ -289,7 +277,7 @@ class Worker(threading.Thread):
                             # Ora devo controllare che tra tutti i peer, il file possa essere disponibile completamente
                             if not Utility.partChecker(listParts, nParts):
                                 canLogout = False
-                    
+
                     # Se si può effettuare il logout allora preparo il messaggio con le parti dei file in possesso
                     if canLogout:
                         partOwn = 0
@@ -299,6 +287,7 @@ class Worker(threading.Thread):
 
                         # Rimuovo i file e le parti del file dal database
                         Utility.database.removeAllFileForSessionId(ssId)
+                        Utility.database.removePeer(ssId)
 
                         # Preparo ora il messaggio di ritorno ALOG
                         msgRet = "ALOG" + str(partOwn).zfill(10)
@@ -310,14 +299,6 @@ class Worker(threading.Thread):
                 # Invio il messaggio di ritorno
                 self.client.sendall(msgRet.encode())
 
-            elif command == "NLOG":
-                True
-                # Todo da scrivere
-
-            elif command == "ALOG":
-                True
-                # Todo da scrivere
-
             else:
                 resp = None
                 running = False
@@ -327,14 +308,17 @@ class Worker(threading.Thread):
             #if resp is not None:
             #    self.client.sendall(resp.encode())
             print("comando inviato: " + command)
+            self.client.shutdown(1)
+            self.client.close()
+            running=False
 
             # ricezione del dato e immagazzinamento fino al max
             #data = self.client.recv(2048)
+
 
         # fine del ciclo
 
         # chiude la connessione quando non ci sono più dati
         print("Chiusura socket di connessione")
         # chiude il client
-        self.client.shutdown(1)
-        self.client.close()
+

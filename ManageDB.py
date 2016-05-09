@@ -1,10 +1,12 @@
-# PEERS:        SESSIONID   IP          PORT
-# FILES:        SESSIONID   NAME        MD5    LENFILE    LENPART
-# PARTS:        MD5         SESSIONID   PART
+# SUPERNODES:   IP          PORT
+# PEERS:        SESSIONID   IP      PORT
+# FILES:        SESSIONID   NAME    MD5
+# PACKETS:      ID      DATE
 
 import sqlite3
 import time
 
+# TODO testare i metodi del database
 class ManageDB:
 
     # Metodo che inizializza il database
@@ -332,7 +334,7 @@ class ManageDB:
                 c.execute("SELECT LENFILE,LENPART FROM FILES WHERE MD5=:M",{"M":Md5})
                 count = c.fetchall()
             elif flag == 5:
-                c.execute("SELECT SESSIONID FROM FILES WHERE SESSIONID!=SID MD5=:M",{"SID":sessionId,"M": Md5})
+                c.execute("SELECT SESSIONID FROM FILES WHERE SESSIONID!=:SID AND MD5=:M",{"SID":sessionId,"M": Md5})
                 count = c.fetchall()
 
             conn.commit()
@@ -342,7 +344,7 @@ class ManageDB:
             if conn:
                 conn.rollback()
 
-            raise Exception("Errore - listFileForSessionId: %s:" % e.args[0])
+            raise Exception("Errore - findFile: %s:" % e.args[0])
         finally:
             # Chiudo la connessione
             if conn:

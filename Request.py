@@ -2,7 +2,6 @@
 
 from Utility import *
 from Communication import *
-#import Communication
 import socket
 import random
 import logging
@@ -32,7 +31,7 @@ class Request:
             ## ritorno della socket al chiamante
             return sock
         except Exception as e:
-            print("Errore Peer down " + ip_tracker + " " + port_tracker)
+            print("Errore Peer down " + ip_tracker + " " + str(port_tracker))
 
     ## questo metodo che riceve una socket scrive la login su tale
     ## backend verificando l'invio
@@ -44,7 +43,7 @@ class Request:
             sock_end.send(request.encode())
             logging.debug("inviato logi")
         except Exception as e:
-            logging.debug("ERROR on Send " + str(e))
+            logging.debug("ERROR on Send login" + str(e))
 
     ## metodo che data una socket di ingresso invia al
     ## terminale le informazioni per il logout
@@ -52,13 +51,14 @@ class Request:
     def logout(sock_end):
         try:
             request = 'LOGO'
-            request = request + Utility.SessionID
+            request = request + Utility.sessionID
             sock_end.send(request.encode())
-            logging.debug('inviato logo ' + Utility.SessionID)
+            logging.debug('inviato logo ' + Utility.sessionID)
         except Exception as e:
-            logging.debug("ERROR on Send " + str(e))
+            logging.debug("ERROR on Send logout" + str(e))
 
-    # Metodo che gestisce invia una look
+    ## metodo che ricevendo un valore di ricerca
+    ## e un socket invia una richiesta di ricerca
     @staticmethod
     def look(socket,ssId,serch):
         try:
@@ -68,7 +68,6 @@ class Request:
             logging.debug("Inviata look")
         except Exception as e:
             logging.debug("Errore look "+str(e))
-            raise Exception("Errore Invio Look")
 
     # Metodo che invia una FCHU
     @staticmethod
@@ -108,10 +107,10 @@ class Request:
             md5_file = Utility.generateMd5(path_file)
             file_name = path_file.split('/')[-1]
             len_file = os.stat(path_file).st_size
-            request='ADDR' + Utility.SessionID
-            request = request + len_file.zfill(10) + Utility.LEN_PART.zfill(6)
-            request = request.ljust(100) + md5_file
-            sock_end.send(request)
+            request='ADDR' + Utility.sessionID
+            request = request + str(len_file).zfill(10) + str(Utility.LEN_PART).zfill(6)
+            request = request + file_name.ljust(100) + md5_file
+            sock_end.send(request.encode())
 
         except Exception as e:
             logging.debug("Error on Send add_file " + str(e))
@@ -134,7 +133,7 @@ class Request:
     def download(ip, port, file_Md5,file_name, file_part):
         try:
             ts = Downloader(ip, port, file_Md5,file_name, file_part)
-            ts.run()
+            ts.start()
 
         except Exception as e:
             logging.debug("ERROR on Download " + str(e))
