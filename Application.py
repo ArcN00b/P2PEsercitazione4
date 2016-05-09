@@ -244,15 +244,18 @@ class Window(Frame):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
-    tracker = False
+    tracker = True
 
     if tracker:
-        tcpServer = Tracker(Utility.database, Utility.IPv4_TRACKER + '|' + Utility.IPv6_TRACKER, Utility.PORT_TRACKER)
-        tcpServer.run()
+        tcpServer = Tracker(Utility.database, Utility.IP_TRACKER, Utility.PORT_TRACKER)
+        tcpServer.start()
 
     else:
         root = Tk()
         root.geometry("800x600")
         app = Window(root=root)
+
+        tcpServer = Tracker(Utility.database, Utility.IP_MY, Utility.PORT_MY)
+        tcpServer.start()
 
         root.mainloop()

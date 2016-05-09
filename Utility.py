@@ -17,8 +17,8 @@ class Utility:
     IP_MY = IPV4_MY+'|'+IPV6_MY
 
     PORT_MY = 12345
-    PATHDIR = '/home/marco/seedfolder/'
-    PATHTEMP = '/home/marco/seedfolder/temp/'
+    PATHDIR = '/home/flavio/Scrivania/'
+    PATHTEMP = '/home/flavio/Scrivania/temp/'
 
     ## variabili condivise in piu' parti del programma
     LEN_PART = 262144
