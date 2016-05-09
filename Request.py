@@ -51,9 +51,9 @@ class Request:
     def logout(sock_end):
         try:
             request = 'LOGO'
-            request = request + Utility.SessionID
+            request = request + Utility.sessionID
             sock_end.send(request.encode())
-            logging.debug('inviato logo ' + Utility.SessionID)
+            logging.debug('inviato logo ' + Utility.sessionID)
         except Exception as e:
             logging.debug("ERROR on Send logout" + str(e))
 
@@ -107,10 +107,10 @@ class Request:
             md5_file = Utility.generateMd5(path_file)
             file_name = path_file.split('/')[-1]
             len_file = os.stat(path_file).st_size
-            request='ADDR' + Utility.SessionID
-            request = request + len_file.zfill(10) + Utility.LEN_PART.zfill(6)
+            request='ADDR' + Utility.sessionID
+            request = request + str(len_file).zfill(10) + str(Utility.LEN_PART).zfill(6)
             request = request.ljust(100) + md5_file
-            sock_end.send(request)
+            sock_end.send(request.encode())
 
         except Exception as e:
             logging.debug("Error on Send add_file " + str(e))

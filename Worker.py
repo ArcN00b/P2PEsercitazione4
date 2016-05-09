@@ -165,7 +165,7 @@ class Worker(threading.Thread):
                 chunklen = 512
                 md5 = fields[0]
                 partNum = fields[1]
-                obj = Utility.database.findFile(Utility.SessionID, md5, None, 1)
+                obj = Utility.database.findFile(Utility.sessionID, md5, None, 1)
 
                 # Ora preparo il file per la lettura
                 if len(obj) > 0:
@@ -305,16 +305,14 @@ class Worker(threading.Thread):
             #if resp is not None:
             #    self.client.sendall(resp.encode())
             print("comando inviato: " + command)
-            data = self.client.recv(2048)
-            self.client.shutdown(1)
-            self.client.close()
 
             # ricezione del dato e immagazzinamento fino al max
-
+            #data = self.client.recv(2048)
 
         # fine del ciclo
 
         # chiude la connessione quando non ci sono più dati
         print("Chiusura socket di connessione")
-
-
+        # chiude il client
+        self.client.shutdown(1)
+        self.client.close()
