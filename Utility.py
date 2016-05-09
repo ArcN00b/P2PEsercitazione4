@@ -12,8 +12,8 @@ class Utility:
 
     PORT_TRACKER = 3000
 
-    IPV4_MY = "172.030.007.003"
-    IPV6_MY = "fc00:0000:0000:0000:0000:0000:0007:0003"
+    IPV4_MY = "172.030.007.001"
+    IPV6_MY = "fc00:0000:0000:0000:0000:0000:0007:0001"
     IP_MY = IPV4_MY+'|'+IPV6_MY
 
     PORT_MY = 12345
@@ -25,7 +25,7 @@ class Utility:
     LEN_PART = 262144
 
     sessionID = ''
-    listLastSerch=[]
+    listLastSearch=[]
     numDown=0
     numDownParalleli=10
     semaforo=threading.Semaphore(1)

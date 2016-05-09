@@ -143,6 +143,10 @@ class Window(Frame):
         Request.login(sock_end)
         Utility.sessionID = Response.login_ack(sock_end)
         Response.close_socket(sock_end)
+        try:
+            os.stat(Utility.PATHTEMP)
+        except:
+            os.mkdir(Utility.PATHTEMP)
         self.status.set("SEI LOGGATO come " + Utility.sessionID)
         self.print_console("LOGIN")
 
@@ -182,17 +186,17 @@ class Window(Frame):
             # Invio richiesta look
             Request.look(sock, Utility.sessionID, serch)
             # Azzero la ricerca precedente
-            Utility.listLastSerch=[]
+            Utility.listLastSearch=[]
             # Rimuovo la lista dei file scaricati
             self.list_risultati.delete(0,END)
             # Leggo la ALOO
             # Popolo la lista globale con i risultati dell'ultima ricerca
-            self.risultati,Utility.listLastSerch = Response.look_ack(sock)
+            self.risultati,Utility.listLastSearch = Response.look_ack(sock)
             Response.close_socket(sock)
 
             # inserisco tutti gli elementi della lista nella lista nel form
-            for value in Utility.listLastSearch:
-                self.list_risultati.insert(END, value[0] + ' ' + value[1])
+            for value in self.risultati:
+                self.list_risultati.insert(END, value)
 
     def btn_scarica_click(self):
         try:
@@ -201,7 +205,7 @@ class Window(Frame):
             index = self.list_risultati.curselection()[0]
             logging.debug("selezionato: " + self.risultati[index])
             # prendo l'elemento da scaricare
-            info = Utility.listLastSerch[index]
+            info = Utility.listLastSearch[index]
 
             #Classe che esegue il download di un file
             down=Scaricamento(info)
@@ -247,7 +251,7 @@ class Window(Frame):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
-    tracker = False
+    tracker = True
 
     if tracker:
         tcpServer = Tracker(Utility.database, Utility.IPv4_TRACKER + '|' + Utility.IPv6_TRACKER, Utility.PORT_TRACKER)

@@ -28,7 +28,7 @@ class Parser:
             fields[1] = data[20:30].decode()    #LenFile[10B]
             fields[2] = data[30:36].decode()    #LenPart[6B]
             fields[3] = data[36:136].decode()    # FileName[100B]
-            fields[4] = data[136:158].decode()     # MD5[32B]
+            fields[4] = data[136:168].decode()     # MD5[32B]
 
         # Parsing AADR
         elif command == 'AADR':
