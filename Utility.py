@@ -25,7 +25,7 @@ class Utility:
     LEN_PART = 262144
 
     sessionID = ''
-    listLastSerch=[]
+    listLastSearch=[]
     numDown=0
     numDownParalleli=10
     semaforo=threading.Semaphore(1)

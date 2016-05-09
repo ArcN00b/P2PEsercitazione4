@@ -171,7 +171,7 @@ class Worker(threading.Thread):
                 if len(obj) > 0:
 
                     # Ricavo il nome del file
-                    filename = Utility.PATHTEMP + str(obj[0][0]).strip() + partNum
+                    filename = Utility.PATHTEMP + str(obj[0][0]).strip() + str(int(partNum))
 
                     # Calcolo in quanti chunk devo dividere la parte
                     lenPart = int(obj[0][1])
@@ -233,7 +233,6 @@ class Worker(threading.Thread):
                 # Preparo e invio il messaggio di ritorno
                 msgRet = "APAD" + str(partOwn).zfill(8)
                 self.client.sendall(msgRet.encode())
-
 
             elif command == "LOGO":
                 # Todo da testare
@@ -306,13 +305,15 @@ class Worker(threading.Thread):
             #    self.client.sendall(resp.encode())
             print("comando inviato: " + command)
 
+            # chiude la connessione quando non ci sono più dati
+            print("Chiusura socket di connessione")
+            # chiude il client
+            self.client.shutdown(1)
+            self.client.close()
+
             # ricezione del dato e immagazzinamento fino al max
             #data = self.client.recv(2048)
 
         # fine del ciclo
 
-        # chiude la connessione quando non ci sono più dati
-        print("Chiusura socket di connessione")
-        # chiude il client
-        self.client.shutdown(1)
-        self.client.close()
+

@@ -31,7 +31,7 @@ class Request:
             ## ritorno della socket al chiamante
             return sock
         except Exception as e:
-            print("Errore Peer down " + ip_tracker + " " + port_tracker)
+            print("Errore Peer down " + ip_tracker + " " + str(port_tracker))
 
     ## questo metodo che riceve una socket scrive la login su tale
     ## backend verificando l'invio
@@ -109,7 +109,7 @@ class Request:
             len_file = os.stat(path_file).st_size
             request='ADDR' + Utility.sessionID
             request = request + str(len_file).zfill(10) + str(Utility.LEN_PART).zfill(6)
-            request = request.ljust(100) + md5_file
+            request = request + file_name.ljust(100) + md5_file
             sock_end.send(request.encode())
 
         except Exception as e:

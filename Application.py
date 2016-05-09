@@ -143,6 +143,11 @@ class Window(Frame):
         Request.login(sock_end)
         Utility.sessionID = Response.login_ack(sock_end)
         Response.close_socket(sock_end)
+        # creazione della cartella temporanea
+        try:
+            os.stat(Utility.PATHTEMP)
+        except:
+            os.mkdir(Utility.PATHTEMP)
         self.status.set("SEI LOGGATO come " + Utility.sessionID)
         self.print_console("LOGIN")
 
@@ -168,7 +173,7 @@ class Window(Frame):
 
         ## altrimenti rimane connesso
         else:
-            self.stutus.set('FALLIMENTO DISCONNESSIONE - PARTI SCARICATE: ' + n_part)
+            self.status.set('FALLIMENTO DISCONNESSIONE - PARTI SCARICATE: ' + n_part)
             logging.debug('Disconnessione non consentita hai della parti non scaricate da altri')
 
     def btn_ricerca_click(self):
@@ -182,17 +187,17 @@ class Window(Frame):
             # Invio richiesta look
             Request.look(sock, Utility.sessionID, serch)
             # Azzero la ricerca precedente
-            Utility.listLastSerch=[]
+            Utility.listLastSearch=[]
             # Rimuovo la lista dei file scaricati
             self.list_risultati.delete(0,END)
             # Leggo la ALOO
             # Popolo la lista globale con i risultati dell'ultima ricerca
-            self.risultati,Utility.listLastSerch = Response.look_ack(sock)
+            self.risultati,Utility.listLastSearch = Response.look_ack(sock)
             Response.close_socket(sock)
 
             # inserisco tutti gli elementi della lista nella lista nel form
-            for value in Utility.listLastSearch:
-                self.list_risultati.insert(END, value[0] + ' ' + value[1])
+            for value in self.risultati:
+                self.list_risultati.insert(END, value)
 
     def btn_scarica_click(self):
         try:
@@ -201,7 +206,7 @@ class Window(Frame):
             index = self.list_risultati.curselection()[0]
             logging.debug("selezionato: " + self.risultati[index])
             # prendo l'elemento da scaricare
-            info = Utility.listLastSerch[index]
+            info = Utility.listLastSearch[index]
 
             #Classe che esegue il download di un file
             down=Scaricamento(info)
@@ -225,7 +230,7 @@ class Window(Frame):
 
             ## aggiornamento database ocn l'aggiunta del file e delle parti
             Utility.database.addFile(Utility.sessionID, file_name, md5_file, os.stat(path_file).st_size, Utility.LEN_PART)
-            Utility.database.addPart(md5_file, Utility.sessionID, '1' * num_parts)
+            Utility.database.addPart(md5_file, Utility.sessionID, '1' * int(num_parts))
 
             Divide.Divider.divide(Utility.PATHDIR, Utility.PATHTEMP, file_name, Utility.LEN_PART)
 
