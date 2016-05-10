@@ -23,12 +23,12 @@ class Divider:
             numpart = int(lenfile / lenpart)
 
         fcomp = open(pathdir + nomeFComp, "rb")
-        for i in range(1, numpart + 1):
+        for i in range(0, numpart):
             if i == numpart and respart > 0:
                 buffer = fcomp.read(respart)
             else:
                 buffer = fcomp.read(lenpart)
-            with open(pathtemp + nomeFComp + str(i), "ab") as myfile:
+            with open(pathtemp + nomeFComp + str(i), "wb") as myfile:
                 myfile.write(buffer)
 
         fcomp.close()

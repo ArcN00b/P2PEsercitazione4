@@ -135,12 +135,12 @@ class Utility:
     # Metodo che controlla che tutte le parti del file siano presenti almeno in una occorrenza della lista
     @staticmethod
     def partChecker(listParts, length):
-        for j in range(0, len(listParts[0][0])):
+        for j in range(0, length):
 
             # Controllo che sia presente almeno un 1 in posizione "j" tra tutte le righe della lista
             match = False
             for i in range(0, len(listParts)):
-                if listParts[i][0][j] == 1:
+                if listParts[i][j] == '1':
                     match = True
                     break
 
