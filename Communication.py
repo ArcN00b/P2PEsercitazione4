@@ -183,14 +183,13 @@ class Downloader(threading.Thread):
             # TODO pensare a come agire in caso di RPAD non inviata correttamente
             if sentTracker is None or sentTracker < len(msgPart):
                 print('RPAD non riuscita in download')
-                sockTracker.close()
                 return
 
             # TODO pensare a incongruenze aggiungendo parte al database se non viene avvisato il tracker
             # TODO inserire il codice di merge in un try catch?
             # Aggiungo la parte alla lista delle parti nel database
             strPart = (Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5))[0][0]
-            strPart =strPart[:part]+ '1'+strPart[part+1:]
+            strPart = strPart[:part] + '1' + strPart[part+1:]
             Utility.database.updatePart(Utility.sessionID, md5, strPart)
 
             # Verifico se sono stati scaricati tutti i file e in tal caso eseguo il merge
@@ -207,25 +206,26 @@ class Downloader(threading.Thread):
                 Merge.Merger.merge(name, lenFile, lenPart)
 
                 # Avviso il tracker di avere il file completo
-                msgFile = 'ADDR' + Utility.sessionID + '{:0>10}'.format(lenFile) + + '{:0>6}'.format(lenPart)
-                sentTracker = sockTracker.send(msgFile.encode())
+                msgFile = 'ADDR' + Utility.sessionID + '{:0>10}'.format(lenFile) + '{:0>6}'.format(lenPart) + name.ljust(100) + md5
+                addTracker = Request.Request.create_socket(Utility.IP_TRACKER, int(Utility.PORT_TRACKER))
+                sentTracker = addTracker.send(msgFile.encode())
+
+                # Aggiungo il file al database
+                Utility.database.addFile(Utility.sessionID,name,md5,lenFile,lenPart)
+
+                # Attendo risposta aggiunta file
+                Response.add_file_ack(addTracker)
+                Request.Request.close_socket(addTracker)
                 # TODO pensare a come agire in caso di ADDR non inviata correttamente
                 if sentTracker is None or sentTracker < len(msgFile):
                     print('ADDR non riuscita in download')
-                    sockTracker.close()
                     return
-
-
 
             f.close()
             print("Download completato")
 
-        #sockTracker.shutdown(1)
-        #sockTracker.close()
-        sock.shutdown(1)
-        sock.close()
-
-
+        Request.Request.close_socket(sockTracker)
+        Request.Request.close_socket(sock)
 
 class AFinder:
     # Costruttore che inizializza gli attributi del Worker

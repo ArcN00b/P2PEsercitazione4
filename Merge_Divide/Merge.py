@@ -20,7 +20,7 @@ class Merger:
         fCompleto.close()
 
         # Raggruppo le parti in un unico file
-        for i in range(1, nPart + 1):
+        for i in range(0, nPart):
             # Aggiungo la parte i-esima in coda al file
             fParte = open(Utility.PATHTEMP + name.rstrip(' ') + str(i), "rb")
             buffer = fParte.read()

@@ -83,7 +83,6 @@ class Scaricamento:
                         ts.start()
                     except Exception as e:
                         logging.debug("ERROR on Download " + str(e))
-                    #Request.download(datiDown[0],datiDown[1],md5,name,parte+1) #Il piu uno e perche il download vuole cosi
                     #Controllo se ho gia fatto almeno 10 download
                     if nDown>=Utility.numDownParalleli:
                         break
