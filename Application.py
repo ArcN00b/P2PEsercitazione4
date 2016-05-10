@@ -41,19 +41,19 @@ class Window(Frame):
         menu.add_cascade(label="File", menu=file)
 
         ### quadro login logout
-        self.quadro_login = Frame(self, background="white", borderwidth=5, relief=RIDGE, height=10)
+        self.quadro_login = Frame(self, background="white", borderwidth=5, relief=RIDGE)
         self.quadro_login.pack(side=TOP, fill=BOTH, ipadx=self.imb_int_x, ipady=self.imb_int_y)
 
         ## quadro centrale della ricerca
-        self.quadro_centrale_ricerca = Frame(self, background="white", borderwidth=5, relief=RIDGE, height=10)
+        self.quadro_centrale_ricerca = Frame(self, background="white", borderwidth=5, relief=RIDGE)
         self.quadro_centrale_ricerca.pack(side=TOP, fill=BOTH, ipadx=self.imb_int_x, ipady=self.imb_int_y)
 
         ## quadro centrale della ricerca
-        self.quadro_centrale_file = Frame(self, background="white", borderwidth=5, relief=RIDGE, height=10)
+        self.quadro_centrale_file = Frame(self, background="white", borderwidth=5, relief=RIDGE)
         self.quadro_centrale_file.pack(side=TOP, fill=BOTH, ipadx=self.imb_int_x, ipady=self.imb_int_y)
 
         ## quadro con file caricati
-        self.quadro_console = Frame(self, background="white", borderwidth=5, relief=RIDGE, height=10)
+        self.quadro_console = Frame(self, background="white", borderwidth=5, relief=RIDGE)
         self.quadro_console.pack(side=TOP, fill=BOTH, ipadx=self.imb_int_x, ipady=self.imb_int_y)
 
         ## ---------------aggiunta dei pulsanti di login e logout------------
@@ -148,8 +148,13 @@ class Window(Frame):
             os.stat(Utility.PATHTEMP)
         except:
             os.mkdir(Utility.PATHTEMP)
-        self.status.set("SEI LOGGATO come " + Utility.sessionID)
-        self.print_console("LOGIN")
+
+        if Utility.sessionID != None:
+            self.status.set("SEI LOGGATO come " + Utility.sessionID)
+            self.print_console('LOGIN effettuato a ' + Utility.IP_TRACKER)
+        else:
+            self.status.set('SEI DISCONNESSO')
+            self.print_console("LOGIN fallita")
 
     ## evento bottone disconnessione
     def btn_logout_click(self):
