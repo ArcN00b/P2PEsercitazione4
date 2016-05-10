@@ -175,7 +175,7 @@ class Worker(threading.Thread):
                     filename = Utility.PATHTEMP + str(obj[0][0]).strip() + str(int(partNum))
 
                     # Calcolo in quanti chunk devo dividere la parte
-                    lenPart = int(obj[0][1])
+                    lenPart = os.stat(filename).st_size
                     num_chunk = lenPart // chunklen
                     if lenPart % chunklen != 0:
                         num_chunk = num_chunk + 1
@@ -223,12 +223,29 @@ class Worker(threading.Thread):
 
                 # Ottengo la parte dal database modificando il valore in posizione partNum
                 part = Utility.database.findPartForMd5AndSessionId(ssId, md5)
-                tmp = list(part[0][0])
-                tmp = tmp[partNum] = "1"
-                part = "".join(tmp)
+                #Aggiungo al database i dati di scaricamento della persona
+                if (len(part)==0):
+                    l=Utility.database.findFile(None,md5,None,4)
+                    a=int(l[0][0])# Len file
+                    b=int(l[0][1]) # Len part
+                    if a%b==0:
+                        numPart=a//b
+                    else:
+                        numPart=(a//b)+1
+
+                    if numPart%8==0:
+                        parte='0'*numPart
+                    else:
+                        parte='0'*numPart+'0'*(8-(numPart%8))
+                    Utility.database.addPart(md5,ssId,parte)
+                    part = Utility.database.findPartForMd5AndSessionId(ssId, md5)
+                tmp = part[0][0]# Prendo la stringa
+                part =tmp[:partNum]+ '1'+tmp[partNum+1:]
+                #tmp = tmp[partNum] = "1"
+                #part = "".join(tmp)
 
                 # Conto quante parti ha attualmente il peer e aggiorno il database
-                partOwn = part.coun("1")
+                partOwn = part.count("1")
                 Utility.database.updatePart(ssId, md5, part)
 
                 # Preparo e invio il messaggio di ritorno
@@ -253,7 +270,7 @@ class Worker(threading.Thread):
                     canLogout = True
                     partDown = 0
                     for file in listFile:
-                        listSsId = Utility.database.findFile(ssId, file[0][0], None, 5)
+                        listSsId = Utility.database.findFile(ssId, file[0], None, 5)
 
                         # Se nessun altro peer ha lo stesso file non posso effettuare il logout
                         if len(listSsId) == 0:
@@ -263,12 +280,12 @@ class Worker(threading.Thread):
                         else:
                             listParts = []
                             for peer in listSsId:
-                                tmp = Utility.database.findPartForMd5AndSessionId(peer, file[0][0])
+                                tmp = (Utility.database.findPartForMd5AndSessionId(peer[0], file[0]))[0][0]
                                 listParts.append(tmp)
 
                             # Ricavo ora il numero delle parti del file per effettuare il controllo successivo
-                            nParts = file[0][2]//file[0][3]     #file[0][2] = LENFILE
-                            if file[0][2] % file[0][3] != 0:    #file[0][3] = LENPART
+                            nParts = int(file[2])//int(file[3])     #file[0][2] = LENFILE
+                            if int(file[2]) % int(file[3]) != 0:    #file[0][3] = LENPART
                                 nParts += 1
 
                             # Conto quante parti sono state scaricate almeno una volta (caso NLOG) mi è comodo farlo qui
@@ -282,7 +299,7 @@ class Worker(threading.Thread):
                     if canLogout:
                         partOwn = 0
                         for file in listFile:
-                            tmp = Utility.database.findPartForMd5AndSessionId(peer, file[0][0])
+                            tmp = (Utility.database.findPartForMd5AndSessionId(peer[0], file[0]))[0][0]
                             partOwn += tmp.count("1")
 
                         # Rimuovo i file e le parti del file dal database

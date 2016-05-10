@@ -1,7 +1,7 @@
 
 from Request import *
 from Response import *
-#from Communication import *
+from Communication import *
 from Utility import *
 
 class Scaricamento:
@@ -76,9 +76,14 @@ class Scaricamento:
                     datiDown=listaPart[i][down+1]
                     datiDown=datiDown.split('-')
                     parte=int(listaPart[i][0])
-                    numDown=numDown+1
+                    nDown=nDown+1
                     #Chiamata al download
-                    Request.download(datiDown[0],datiDown[1],md5,name,parte+1) #Il piu uno e perche il download vuole cosi
+                    try:
+                        ts = Downloader(datiDown[0], datiDown[1], md5,name, parte)
+                        ts.start()
+                    except Exception as e:
+                        logging.debug("ERROR on Download " + str(e))
+                    #Request.download(datiDown[0],datiDown[1],md5,name,parte+1) #Il piu uno e perche il download vuole cosi
                     #Controllo se ho gia fatto almeno 10 download
                     if nDown>=Utility.numDownParalleli:
                         break
@@ -88,7 +93,7 @@ class Scaricamento:
 
                 #Utility.semaforo.acquire()
 
-                time.sleep(60)
+                time.sleep(Utility.attesa)
 
                 '''a=time.strftime("%M:%S")
                 a=a.split(':')
@@ -103,4 +108,6 @@ class Scaricamento:
 
                 #conto il numero di parti scaricate, interrogando il database
                 myPart=Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5)
-                partiScaricate=myPart.count('1')
+                partiScaricate=(myPart[0][0]).count('1')
+
+

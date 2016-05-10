@@ -1,7 +1,8 @@
 from builtins import print
 
 from Utility import *
-from Request import *
+#from Request import *
+import Request
 from Response import *
 from Merge_Divide import Merge
 import time
@@ -177,7 +178,7 @@ class Downloader(threading.Thread):
 
             # Avviso il tracker di aver completato il download della parte del file
             msgPart = 'RPAD' + Utility.sessionID + md5 + '{:0>8}'.format(int(part))
-            sockTracker = Request(Utility.IP_TRACKER, int(Utility.PORT_TRACKER))
+            sockTracker = Request.Request.create_socket(Utility.IP_TRACKER, int(Utility.PORT_TRACKER))
             sentTracker = sockTracker.send(msgPart.encode())
             # TODO pensare a come agire in caso di RPAD non inviata correttamente
             if sentTracker is None or sentTracker < len(msgPart):
@@ -188,8 +189,8 @@ class Downloader(threading.Thread):
             # TODO pensare a incongruenze aggiungendo parte al database se non viene avvisato il tracker
             # TODO inserire il codice di merge in un try catch?
             # Aggiungo la parte alla lista delle parti nel database
-            strPart = Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5)
-            strPart[part-1] = '1'
+            strPart = (Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5))[0][0]
+            strPart =strPart[:part]+ '1'+strPart[part+1:]
             Utility.database.updatePart(Utility.sessionID, md5, strPart)
 
             # Verifico se sono stati scaricati tutti i file e in tal caso eseguo il merge
