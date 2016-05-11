@@ -141,87 +141,92 @@ class Downloader(threading.Thread):
         # ricevo i primi 10 Byte che sono "ARET" + n_chunk
         recv_mess = sock.recv(10).decode()
         if recv_mess[:4] == "AREP":
-            num_chunk = int(recv_mess[4:])
-            print("Download avviato")
+            try:
+                num_chunk = int(recv_mess[4:])
+                print("Download avviato")
 
-            # apro il file per la scrittura
-            # Apro il file rimuovendo gli spazi finali dal nome
-            # Aggiungo al nome la parte del file scaricata
-            f = open(Utility.PATHTEMP + name.rstrip(' ') + str(int(part)), "wb")
+                # apro il file per la scrittura
+                # Apro il file rimuovendo gli spazi finali dal nome
+                # Aggiungo al nome la parte del file scaricata
+                f = open(Utility.PATHTEMP + name.rstrip(' ') + str(int(part)), "wb")
 
-            # Finchè i chunk non sono completi
-            print("Download in corso", end='\n')
-            for count_chunk in range(0, num_chunk):
-                tmp = sock.recv(5)  # leggo la lunghezza del chunk
-                while len(tmp) < 5:
-                    tmp += sock.recv(5 - len(tmp))
-                    if len(tmp) == 0:
-                        raise Exception("Socket close")
+                # Finchè i chunk non sono completi
+                print("Download in corso", end='\n')
+                for count_chunk in range(0, num_chunk):
 
-                # Eseguo controlli di coerenza su ciò che viene ricavato dal socket
-                try:
-                    int(tmp.decode())
-                except Exception as e:
-                    raise Exception("number format exception")
+                    tmp = sock.recv(5)  # leggo la lunghezza del chunk
+                    while len(tmp) < 5:
+                        tmp += sock.recv(5 - len(tmp))
+                        if len(tmp) == 0:
+                            raise Exception("Socket close")
 
-                chunklen = int(tmp.decode())
-                buffer = sock.recv(chunklen)  # Leggo il contenuto del chunk
+                    # Eseguo controlli di coerenza su ciò che viene ricavato dal socket
+                    try:
+                        int(tmp.decode())
+                    except Exception as e:
+                        raise Exception("number format exception")
 
-                # Leggo i dati del file dal socket
-                while len(buffer) < chunklen:
-                    tmp = sock.recv(chunklen - len(buffer))
-                    buffer += tmp
-                    if len(tmp) == 0:
-                        raise Exception("Socket close")
+                    chunklen = int(tmp.decode())
+                    buffer = sock.recv(chunklen)  # Leggo il contenuto del chunk
 
-                f.write(buffer)  # Scrivo il contenuto del chunk nel file
+                    # Leggo i dati del file dal socket
+                    while len(buffer) < chunklen:
+                        tmp = sock.recv(chunklen - len(buffer))
+                        buffer += tmp
+                        if len(tmp) == 0:
+                            raise Exception("Socket close")
 
-            # Avviso il tracker di aver completato il download della parte del file
-            msgPart = 'RPAD' + Utility.sessionID + md5 + '{:0>8}'.format(int(part))
-            sockTracker = Request.Request.create_socket(Utility.IP_TRACKER, int(Utility.PORT_TRACKER))
-            sentTracker = sockTracker.send(msgPart.encode())
-            # TODO pensare a come agire in caso di RPAD non inviata correttamente
-            if sentTracker is None or sentTracker < len(msgPart):
-                print('RPAD non riuscita in download')
-                return
+                    f.write(buffer)  # Scrivo il contenuto del chunk nel file
+                f.close()
 
-            # TODO pensare a incongruenze aggiungendo parte al database se non viene avvisato il tracker
-            # TODO inserire il codice di merge in un try catch?
-            # Aggiungo la parte alla lista delle parti nel database
-            strPart = (Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5))[0][0]
-            strPart = strPart[:part] + '1' + strPart[part+1:]
-            Utility.database.updatePart(Utility.sessionID, md5, strPart)
-
-            # Verifico se sono stati scaricati tutti i file e in tal caso eseguo il merge
-            # Verifico se non è presente nessun 0 nella lista delle parti
-            if not('0' in ((Utility.database.findPartForMd5(md5))[0][1])):
-                # Ho tutte le parti ed eseguo il merge di tutte le parti di file
-
-                # Prelevo lenFile e lenPart rispettivamente in row[0][0] e in row[0][1]
-                row = Utility.database.findFile(0,md5,0,4)
-                lenFile = int(row[0][0])
-                lenPart = int(row[0][1])
-
-                #nPart = len((Utility.database.findPartForMd5(md5))[0][1])
-                Merge.Merger.merge(name, lenFile, lenPart)
-
-                # Avviso il tracker di avere il file completo
-                msgFile = 'ADDR' + Utility.sessionID + '{:0>10}'.format(lenFile) + '{:0>6}'.format(lenPart) + name.ljust(100) + md5
-                addTracker = Request.Request.create_socket(Utility.IP_TRACKER, int(Utility.PORT_TRACKER))
-                sentTracker = addTracker.send(msgFile.encode())
-
-                # Aggiungo il file al database
-                Utility.database.addFile(Utility.sessionID,name,md5,lenFile,lenPart)
-
-                # Attendo risposta aggiunta file
-                Response.add_file_ack(addTracker)
-                Request.Request.close_socket(addTracker)
-                # TODO pensare a come agire in caso di ADDR non inviata correttamente
-                if sentTracker is None or sentTracker < len(msgFile):
-                    print('ADDR non riuscita in download')
+                # Avviso il tracker di aver completato il download della parte del file
+                msgPart = 'RPAD' + Utility.sessionID + md5 + '{:0>8}'.format(int(part))
+                sockTracker = Request.Request.create_socket(Utility.IP_TRACKER, int(Utility.PORT_TRACKER))
+                sentTracker = sockTracker.send(msgPart.encode())
+                # TODO pensare a come agire in caso di RPAD non inviata correttamente
+                if sentTracker is None or sentTracker < len(msgPart):
+                    print('RPAD non riuscita in download')
                     return
 
-            f.close()
+                # TODO pensare a incongruenze aggiungendo parte al database se non viene avvisato il tracker
+                # TODO inserire il codice di merge in un try catch?
+                # Aggiungo la parte alla lista delle parti nel database
+                strPart = (Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5))[0][0]
+                strPart = strPart[:part] + '1' + strPart[part+1:]
+                Utility.database.updatePart(Utility.sessionID, md5, strPart)
+
+                # Verifico se sono stati scaricati tutti i file e in tal caso eseguo il merge
+                # Verifico se non è presente nessun 0 nella lista delle parti
+                if not('0' in ((Utility.database.findPartForMd5(md5))[0][1])):
+                    # Ho tutte le parti ed eseguo il merge di tutte le parti di file
+
+                    # Prelevo lenFile e lenPart rispettivamente in row[0][0] e in row[0][1]
+                    row = Utility.database.findFile(0,md5,0,4)
+                    lenFile = int(row[0][0])
+                    lenPart = int(row[0][1])
+
+                    #nPart = len((Utility.database.findPartForMd5(md5))[0][1])
+                    Merge.Merger.merge(name, lenFile, lenPart)
+
+                    # Avviso il tracker di avere il file completo
+                    msgFile = 'ADDR' + Utility.sessionID + '{:0>10}'.format(lenFile) + '{:0>6}'.format(lenPart) + name.ljust(100) + md5
+                    addTracker = Request.Request.create_socket(Utility.IP_TRACKER, int(Utility.PORT_TRACKER))
+                    sentTracker = addTracker.send(msgFile.encode())
+
+                    # Aggiungo il file al database
+                    Utility.database.addFile(Utility.sessionID,name,md5,lenFile,lenPart)
+
+                    # Attendo risposta aggiunta file
+                    Response.add_file_ack(addTracker)
+                    Request.Request.close_socket(addTracker)
+                    # TODO pensare a come agire in caso di ADDR non inviata correttamente
+                    if sentTracker is None or sentTracker < len(msgFile):
+                        print('ADDR non riuscita in download')
+                        return
+
+            except Exception as e:
+                    print("--- ERRORE DOWNLOAD PARTE ---")
+
             print("Download completato")
 
         Request.Request.close_socket(sockTracker)

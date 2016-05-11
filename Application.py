@@ -6,6 +6,7 @@ from tkinter.filedialog import askopenfilename
 from Tracker import *
 from Merge_Divide import Divide
 from Scaricamento import *
+from Request import *
 import logging
 import shutil
 
