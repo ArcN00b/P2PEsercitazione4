@@ -9,7 +9,6 @@ from Scaricamento import *
 import logging
 import shutil
 
-
 class Window(Frame):
     def __init__(self, root=None):
         Frame.__init__(self, root)
@@ -31,30 +30,55 @@ class Window(Frame):
     def createWidgets(self):
 
         ## creazione di un menu e sua aggiunta
-        menu = Menu(self.root)
-        self.root.config(menu=menu)
+        ## menu = Menu(self.root)
+        # self.root.config(menu=menu)
         ## creazione di un oggetto file
-        file = Menu(menu)
+        ## file = Menu(menu)
         ## associazione azione all'oggetto
-        file.add_command(label="Exit", command=self.client_exit)
+        ## file.add_command(label="Exit", command=self.client_exit)
         ## aggiunta del file al menu
-        menu.add_cascade(label="File", menu=file)
+        ## menu.add_cascade(label="File", menu=file)
 
-        ### quadro login logout
-        self.quadro_login = Frame(self, background="white", borderwidth=5, relief=RIDGE)
+        ## quadro gestione tracker
+        self.quadro_tracker = Frame(self, background="white", borderwidth=0, relief=RIDGE)
+        self.quadro_tracker.pack(side=TOP, fill=BOTH, ipadx=self.imb_int_x, ipady=self.imb_int_y)
+
+        ## quadro login logout
+        self.quadro_login = Frame(self, background="white", borderwidth=0, relief=RIDGE)
         self.quadro_login.pack(side=TOP, fill=BOTH, ipadx=self.imb_int_x, ipady=self.imb_int_y)
 
         ## quadro centrale della ricerca
-        self.quadro_centrale_ricerca = Frame(self, background="white", borderwidth=5, relief=RIDGE)
+        self.quadro_centrale_ricerca = Frame(self, background="white", borderwidth=0, relief=RIDGE)
         self.quadro_centrale_ricerca.pack(side=TOP, fill=BOTH, ipadx=self.imb_int_x, ipady=self.imb_int_y)
 
         ## quadro centrale della ricerca
-        self.quadro_centrale_file = Frame(self, background="white", borderwidth=5, relief=RIDGE)
+        self.quadro_centrale_file = Frame(self, background="white", borderwidth=0, relief=RIDGE)
         self.quadro_centrale_file.pack(side=TOP, fill=BOTH, ipadx=self.imb_int_x, ipady=self.imb_int_y)
 
         ## quadro con file caricati
-        self.quadro_console = Frame(self, background="white", borderwidth=5, relief=RIDGE)
+        self.quadro_console = Frame(self, background="white", borderwidth=0, relief=RIDGE)
         self.quadro_console.pack(side=TOP, fill=BOTH, ipadx=self.imb_int_x, ipady=self.imb_int_y)
+
+        ##----------------quadro modifica del tracker------------------------
+        self.lb_tracker_ip4 = Label(self.quadro_tracker, text='IPv4 Tracker', background="white")
+        self.lb_tracker_ip4.pack(side=LEFT, padx=self.imb_x, pady=self.imb_y)
+
+        self.tracker_ip4 = StringVar()
+        self.en_tracker_ip4 = Entry(self.quadro_tracker, textvariable=self.tracker_ip4, width=15)
+        self.en_tracker_ip4.pack(side=LEFT, fill=BOTH, padx=self.imb_x, pady=self.imb_y)
+        self.tracker_ip4.set(Utility.IPv4_TRACKER)
+
+        self.lb_tracker_ip6 = Label(self.quadro_tracker, text='IPv6 Tracker', background="white")
+        self.lb_tracker_ip6.pack(side=LEFT, padx=self.imb_x, pady=self.imb_y)
+
+        self.tracker_ip6 = StringVar()
+        self.en_tracker_ip6 = Entry(self.quadro_tracker, textvariable=self.tracker_ip6, width=35)
+        self.en_tracker_ip6.pack(side=LEFT, fill=BOTH, padx=self.imb_x, pady=self.imb_y)
+        self.tracker_ip6.set(Utility.IPv6_TRACKER)
+
+        self.btn_tracker_config = Button(self.quadro_tracker, command=self.btn_conferma_config_click)
+        self.btn_tracker_config.config(text="Conferma", width=self.larg_bottoni)
+        self.btn_tracker_config.pack(side=RIGHT, padx=self.imb_x, pady=self.imb_y)
 
         ## ---------------aggiunta dei pulsanti di login e logout------------
         self.btn_login = Button(self.quadro_login, command=self.btn_login_click)
@@ -73,10 +97,10 @@ class Window(Frame):
 
 
         ##------------ quadri di divisione della ricerca e scaricamento-------------
-        self.quadro_sinistro_ricerca = Frame(self.quadro_centrale_ricerca, background="white", borderwidth=5, relief=RIDGE)
+        self.quadro_sinistro_ricerca = Frame(self.quadro_centrale_ricerca, background="white", borderwidth=0, relief=RIDGE)
         self.quadro_sinistro_ricerca.pack(side=LEFT, fill=BOTH, expand=1, ipadx = self.imb_int_x, ipady = self.imb_int_y, padx=self.imb_x, pady=self.imb_y)
 
-        self.quadro_destro_ricerca = Frame(self.quadro_centrale_ricerca, background="white", borderwidth=5, relief=RIDGE,)
+        self.quadro_destro_ricerca = Frame(self.quadro_centrale_ricerca, background="white", borderwidth=0, relief=RIDGE,)
         self.quadro_destro_ricerca.pack(side=LEFT, fill=BOTH, expand =1, ipadx=self.imb_int_x, ipady=self.imb_int_y, padx=self.imb_x, pady=self.imb_y)
 
         ## inserimento widget di ricerca e scaricamento
@@ -105,10 +129,10 @@ class Window(Frame):
 
         ##---------------- parte di aggiunta dei file -----------------------------
         ## quadri di divisione per l'aggiunta
-        self.quadro_sinistro_file = Frame(self.quadro_centrale_file, background="white", borderwidth=5, relief=RIDGE)
+        self.quadro_sinistro_file = Frame(self.quadro_centrale_file, background="white", borderwidth=0, relief=RIDGE)
         self.quadro_sinistro_file.pack(side=LEFT, fill=BOTH, expand=1, ipadx=self.imb_int_x, ipady=self.imb_int_y,padx=self.imb_x, pady=self.imb_y)
 
-        self.quadro_destro_file = Frame(self.quadro_centrale_file, background="white", borderwidth=5, relief=RIDGE)
+        self.quadro_destro_file = Frame(self.quadro_centrale_file, background="white", borderwidth=0, relief=RIDGE)
         self.quadro_destro_file.pack(side=LEFT, fill=BOTH, expand=1, ipadx=self.imb_int_x, ipady=self.imb_int_y,padx=self.imb_x, pady=self.imb_y)
 
         self.lb_file = Label(self.quadro_sinistro_file, text='Gestione dei File', background="white")
@@ -131,8 +155,14 @@ class Window(Frame):
         self.text_console.pack(side=TOP, fill=BOTH)
         ##---------------- fine della parte di console ----------------------------
 
-    def client_exit(self):
-        exit()
+    def btn_conferma_config_click(self):
+        Utility.IPv4_TRACKER = self.tracker_ip4.get()
+        Utility.IPv6_TRACKER = self.tracker_ip6.get()
+        self.print_console('aggiornamento tracker ip4: ' + self.tracker_ip4.get())
+        self.print_console('aggiornamento tracker ip6: ' + self.tracker_ip6.get())
+
+    ## def client_exit(self):
+    ##     exit()
 
     def print_console(self, mess):
         self.text_console.insert(END,mess+'\n')
