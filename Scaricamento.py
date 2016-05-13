@@ -1,5 +1,4 @@
 
-
 from Communication import *
 from Response import *
 from Request import *
@@ -51,6 +50,7 @@ class Scaricamento:
             except Exception as e:
                 print("Errore Aggiornamento parti, reinvio richiesta"+str(e))
                 valid_request=False
+
             # Da qui in avanti vi e tutta la logica di funzionamento del scaricamento
             #Controllo se ho ricevuto una richiesta corretta e non vi sono stati errori nel'invio e ricezione FCHU
             if valid_request==True:

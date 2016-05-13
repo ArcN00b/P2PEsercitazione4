@@ -31,7 +31,7 @@ class Request:
             ## ritorno della socket al chiamante
             return sock
         except Exception as e:
-            print("Errore Peer down " + ip_tracker + " " + str(port_tracker))
+            raise Exception('Errore Peer down " + ip_tracker + " " + str(port_tracker)')
 
     ## questo metodo che riceve una socket scrive la login su tale
     ## backend verificando l'invio
@@ -43,7 +43,7 @@ class Request:
             sock_end.send(request.encode())
             logging.debug("inviato logi")
         except Exception as e:
-            logging.debug("ERROR on Send login" + str(e))
+            raise Exception("ERROR on Send login" + str(e))
 
     ## metodo che data una socket di ingresso invia al
     ## terminale le informazioni per il logout
@@ -55,7 +55,7 @@ class Request:
             sock_end.send(request.encode())
             logging.debug('inviato logo ' + Utility.sessionID)
         except Exception as e:
-            logging.debug("ERROR on Send logout" + str(e))
+            raise Exception("ERROR on Send logout" + str(e))
 
     ## metodo che ricevendo un valore di ricerca
     ## e un socket invia una richiesta di ricerca
@@ -67,7 +67,7 @@ class Request:
             socket.send(msg.encode())
             logging.debug("Inviata look")
         except Exception as e:
-            logging.debug("Errore look "+str(e))
+            raise Exception("Errore look "+str(e))
 
     # Metodo che invia una FCHU
     @staticmethod
@@ -77,7 +77,6 @@ class Request:
             socket.send(msg.encode())
             logging.debug("Inviata fchu")
         except Exception as e:
-            logging.debug("Errore fchu "+str(e))
             raise Exception("Errore invio fchu")
 
     # Metodo che invia una RPAD
@@ -88,7 +87,7 @@ class Request:
             socket.send(msg.encode())
             logging.debug("Inviata rpad")
         except Exception as e:
-            logging.debug("Errore rpad " + str(e))
+            raise Exception("Errore rpad " + str(e))
 
     # Metodo che invia un messaggio generico
     @staticmethod
@@ -97,7 +96,7 @@ class Request:
             socket.send(messaggio.encode())
             logging.debug("Inviato msg "+messaggio)
         except Exception as e:
-            logging.debug("Errore invio messaggio "+str(e))
+            raise Exception("Errore invio messaggio "+str(e))
 
     ## metodo che ricevendo il percorso di un file
     ## estrae la lunghezza e il numero di parti
@@ -113,7 +112,7 @@ class Request:
             sock_end.send(request.encode())
 
         except Exception as e:
-            logging.debug("Error on Send add_file " + str(e))
+            raise Exception("Error on Send add_file " + str(e))
 
 
     ## questo metodo chiude la socket verificando se
@@ -124,5 +123,5 @@ class Request:
             socket_end.shutdown(1)
             socket_end.close()
         except Exception as e:
-            logging.debug("ERROR on Close " + str(e))
+            raise Exception("ERROR on Close " + str(e))
 

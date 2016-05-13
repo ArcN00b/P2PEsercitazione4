@@ -28,8 +28,9 @@ class Utility:
     listLastSearch=[]
     numDown=0
     numDownParalleli=10
-    semaforo=threading.Semaphore(1)
-    attesa=60 # Attesa prima di rieseguire una FCHU
+
+    #semaforo=threading.Semaphore(1)
+    attesa=10 # Attesa prima di rieseguire una FCHU
     database = ManageDB.ManageDB()
 
     # Metodo per trasformare un vettore di byte nella stringa di bit
