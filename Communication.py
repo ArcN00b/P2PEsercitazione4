@@ -39,17 +39,22 @@ class Downloader(threading.Thread):
             sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 
         sock.settimeout(10)
-        sock.connect((ind, int(pp2p)))
-        mess = 'RETP' + md5 + '{:0>8}'.format(int(part))
-        sent = sock.send(mess.encode())
-        if sent is None or sent < len(mess):
-            print('recupero non effettuato')
-            sock.close()
-            return
+        try:
+            error = False
+            sock.connect((ind, int(pp2p)))
+            mess = 'RETP' + md5 + '{:0>8}'.format(int(part))
+            sent = sock.send(mess.encode())
+            if sent is None or sent < len(mess):
+                print('recupero non effettuato')
+                sock.close()
+                return
 
-        # ricevo i primi 10 Byte che sono "ARET" + n_chunk
-        recv_mess = sock.recv(10).decode()
-        if recv_mess[:4] == "AREP":
+                # ricevo i primi 10 Byte che sono "ARET" + n_chunk
+            recv_mess = sock.recv(10).decode()
+        except Exception as e:
+            print("ERRORE :" + str(e))
+            error = True
+        if not error and recv_mess[:4] == "AREP":
             try:
                 num_chunk = int(recv_mess[4:])
                 print("Download avviato")
@@ -106,7 +111,8 @@ class Downloader(threading.Thread):
 
                 # Verifico se sono stati scaricati tutti i file e in tal caso eseguo il merge
                 # Verifico se non è presente nessun 0 nella lista delle parti
-                if not('0' in ((Utility.database.findPartForMd5(md5))[0][1])):
+                if not Utility.lock and not('0' in ((Utility.database.findPartForMd5(md5))[0][1])):
+                    Utility.lock = True
                     # Ho tutte le parti ed eseguo il merge di tutte le parti di file
 
                     # Prelevo lenFile e lenPart rispettivamente in row[0][0] e in row[0][1]

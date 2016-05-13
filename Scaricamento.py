@@ -70,6 +70,7 @@ class Scaricamento:
                 # Prendo i primi 10 o meno
                 nDown=0
                 Utility.numDown=Utility.numDownParalleli
+                Utility.lock = False
                 for i in  range(0,len(listaPart)):
                     # Prendo la parte interessata ed eseguo il download
                     nPeer=len(listaPart[i])-1

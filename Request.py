@@ -31,7 +31,7 @@ class Request:
             ## ritorno della socket al chiamante
             return sock
         except Exception as e:
-            raise Exception('Errore Peer down " + ip_tracker + " " + str(port_tracker)')
+            raise Exception("Errore Peer down " + ip_tracker + "  " + str(port_tracker))
 
     ## questo metodo che riceve una socket scrive la login su tale
     ## backend verificando l'invio

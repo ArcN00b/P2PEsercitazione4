@@ -27,10 +27,11 @@ class Utility:
     sessionID = ''
     listLastSearch=[]
     numDown=0
-    numDownParalleli=10
+    numDownParalleli=20
+    lock = False
 
     #semaforo=threading.Semaphore(1)
-    attesa=10 # Attesa prima di rieseguire una FCHU
+    attesa=20 # Attesa prima di rieseguire una FCHU
     database = ManageDB.ManageDB()
 
     # Metodo per trasformare un vettore di byte nella stringa di bit
