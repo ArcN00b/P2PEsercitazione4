@@ -6,8 +6,8 @@ import socket
 import threading
 
 class Utility:
-    IPv4_TRACKER = "172.030.001.001"
-    IPv6_TRACKER = "fc00:0000:0000:0000:0000:0000:0001:0001"
+    IPv4_TRACKER = "172.030.007.001"
+    IPv6_TRACKER = "fc00:0000:0000:0000:0000:0000:0007:0001"
     IP_TRACKER = IPv4_TRACKER+'|'+IPv6_TRACKER
 
     PORT_TRACKER = 3000
@@ -30,7 +30,7 @@ class Utility:
     numDownParalleli=10
 
     #semaforo=threading.Semaphore(1)
-    attesa=60 # Attesa prima di rieseguire una FCHU
+    attesa=10 # Attesa prima di rieseguire una FCHU
     database = ManageDB.ManageDB()
 
     # Metodo per trasformare un vettore di byte nella stringa di bit

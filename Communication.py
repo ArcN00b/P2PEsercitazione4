@@ -86,6 +86,7 @@ class Downloader(threading.Thread):
 
                     f.write(buffer)  # Scrivo il contenuto del chunk nel file
                 f.close()
+                print('download parte completato')
 
                 # Avviso il tracker di aver completato il download della parte del file
                 msgPart = 'RPAD' + Utility.sessionID + md5 + '{:0>8}'.format(int(part))
@@ -115,6 +116,7 @@ class Downloader(threading.Thread):
 
                     #nPart = len((Utility.database.findPartForMd5(md5))[0][1])
                     Merge.Merger.merge(name, lenFile, lenPart)
+                    print("Merge completato")
 
                     # Avviso il tracker di avere il file completo
                     msgFile = 'ADDR' + Utility.sessionID + '{:0>10}'.format(lenFile) + '{:0>6}'.format(lenPart) + name.ljust(100) + md5
@@ -137,6 +139,4 @@ class Downloader(threading.Thread):
 
             except Exception as e:
                     print("--- ERRORE DOWNLOAD PARTE ---")
-
-            print("Download completato")
 
