@@ -54,14 +54,9 @@ class Downloader(threading.Thread):
                 num_chunk = int(recv_mess[4:])
                 print("Download avviato")
 
-                # apro il file per la scrittura
-                # Apro il file rimuovendo gli spazi finali dal nome
-                # Aggiungo al nome la parte del file scaricata
-                #f = open(Utility.PATHTEMP + name.rstrip(' ') + str(int(part)), "wb")
-
                 # Finchè i chunk non sono completi
                 print("Download in corso", end='\n')
-                buff=b''
+                buff = bytes()
                 for count_chunk in range(0, num_chunk):
 
                     tmp = sock.recv(5)  # leggo la lunghezza del chunk
@@ -85,9 +80,9 @@ class Downloader(threading.Thread):
                         buffer += tmp
                         if len(tmp) == 0:
                             raise Exception("Socket close")
+                    buff += buffer
 
-                    buff+=buffer
-
+                # apro il file per la scrittura
                 f = open(Utility.PATHTEMP + name.rstrip(' ') + str(int(part)), "wb")
                 f.write(buff)  # Scrivo il contenuto del chunk nel file
                 f.close()
@@ -111,8 +106,8 @@ class Downloader(threading.Thread):
 
                 # Verifico se sono stati scaricati tutti i file e in tal caso eseguo il merge
                 # Verifico se non è presente nessun 0 nella lista delle parti
-                if Utility.lock==False and not('0' in ((Utility.database.findPartForMd5(md5))[0][1])):
-                    Utility.lock=True
+                if not Utility.lock and not('0' in ((Utility.database.findPartForMd5(md5))[0][1])):
+                    Utility.lock = True
                     # Ho tutte le parti ed eseguo il merge di tutte le parti di file
 
                     # Prelevo lenFile e lenPart rispettivamente in row[0][0] e in row[0][1]

@@ -12,23 +12,23 @@ class Utility:
 
     PORT_TRACKER = 3000
 
-    IPV4_MY = "172.030.007.001"
-    IPV6_MY = "fc00:0000:0000:0000:0000:0000:0007:0001"
+    IPV4_MY = "172.030.007.002"
+    IPV6_MY = "fc00:0000:0000:0000:0000:0000:0007:0002"
     IP_MY = IPV4_MY+'|'+IPV6_MY
 
     PORT_MY = 12345
 
-    PATHDIR = '/home/flavio/Scrivania/File/'
-    PATHTEMP = '/home/flavio/Scrivania/File/temp/'
+    PATHDIR = '/home/simone/Immagini/'
+    PATHTEMP = '/home/simone/Immagini/temp/'
 
     ## variabili condivise in piu' parti del programma
     LEN_PART = 262144
 
     sessionID = ''
-    lock=False
     listLastSearch=[]
     numDown=0
     numDownParalleli=10
+    lock = False
 
     #semaforo=threading.Semaphore(1)
     attesa=10 # Attesa prima di rieseguire una FCHU

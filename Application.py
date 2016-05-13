@@ -301,7 +301,7 @@ class Window(Frame):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
-    tracker = True
+    tracker = False
 
     if tracker:
         tcpServer = Tracker(Utility.database, Utility.IPv4_TRACKER + '|' + Utility.IPv6_TRACKER, Utility.PORT_TRACKER)
