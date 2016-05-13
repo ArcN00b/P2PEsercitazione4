@@ -25,6 +25,7 @@ class Utility:
     LEN_PART = 262144
 
     sessionID = ''
+    lock=False
     listLastSearch=[]
     numDown=0
     numDownParalleli=10

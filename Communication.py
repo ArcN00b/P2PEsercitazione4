@@ -38,6 +38,7 @@ class Downloader(threading.Thread):
             ind = ipv6
             sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 
+        sock.settimeout(10)
         sock.connect((ind, int(pp2p)))
         mess = 'RETP' + md5 + '{:0>8}'.format(int(part))
         sent = sock.send(mess.encode())
@@ -56,10 +57,11 @@ class Downloader(threading.Thread):
                 # apro il file per la scrittura
                 # Apro il file rimuovendo gli spazi finali dal nome
                 # Aggiungo al nome la parte del file scaricata
-                f = open(Utility.PATHTEMP + name.rstrip(' ') + str(int(part)), "wb")
+                #f = open(Utility.PATHTEMP + name.rstrip(' ') + str(int(part)), "wb")
 
                 # Finchè i chunk non sono completi
                 print("Download in corso", end='\n')
+                buff=b''
                 for count_chunk in range(0, num_chunk):
 
                     tmp = sock.recv(5)  # leggo la lunghezza del chunk
@@ -84,7 +86,10 @@ class Downloader(threading.Thread):
                         if len(tmp) == 0:
                             raise Exception("Socket close")
 
-                    f.write(buffer)  # Scrivo il contenuto del chunk nel file
+                    buff+=buffer
+
+                f = open(Utility.PATHTEMP + name.rstrip(' ') + str(int(part)), "wb")
+                f.write(buff)  # Scrivo il contenuto del chunk nel file
                 f.close()
                 print('download parte completato')
 
@@ -106,7 +111,8 @@ class Downloader(threading.Thread):
 
                 # Verifico se sono stati scaricati tutti i file e in tal caso eseguo il merge
                 # Verifico se non è presente nessun 0 nella lista delle parti
-                if not('0' in ((Utility.database.findPartForMd5(md5))[0][1])):
+                if Utility.lock==False and not('0' in ((Utility.database.findPartForMd5(md5))[0][1])):
+                    Utility.lock=True
                     # Ho tutte le parti ed eseguo il merge di tutte le parti di file
 
                     # Prelevo lenFile e lenPart rispettivamente in row[0][0] e in row[0][1]
