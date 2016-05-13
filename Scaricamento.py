@@ -1,7 +1,8 @@
 
-from Request import *
-from Response import *
+
 from Communication import *
+from Response import *
+from Request import *
 from Utility import *
 
 class Scaricamento:

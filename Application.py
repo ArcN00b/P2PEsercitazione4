@@ -6,6 +6,7 @@ from tkinter.filedialog import askopenfilename
 from Tracker import *
 from Merge_Divide import Divide
 from Scaricamento import *
+from Request import *
 import logging
 import shutil
 
@@ -257,7 +258,7 @@ class Window(Frame):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
-    tracker = False
+    tracker = True
 
     if tracker:
         tcpServer = Tracker(Utility.database, Utility.IPv4_TRACKER + '|' + Utility.IPv6_TRACKER, Utility.PORT_TRACKER)
