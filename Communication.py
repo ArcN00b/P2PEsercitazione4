@@ -38,6 +38,7 @@ class Downloader(threading.Thread):
             ind = ipv6
             sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 
+        sock.settimeout(10)
         sock.connect((ind, int(pp2p)))
         mess = 'RETP' + md5 + '{:0>8}'.format(int(part))
         sent = sock.send(mess.encode())
@@ -53,13 +54,9 @@ class Downloader(threading.Thread):
                 num_chunk = int(recv_mess[4:])
                 print("Download avviato")
 
-                # apro il file per la scrittura
-                # Apro il file rimuovendo gli spazi finali dal nome
-                # Aggiungo al nome la parte del file scaricata
-                f = open(Utility.PATHTEMP + name.rstrip(' ') + str(int(part)), "wb")
-
                 # Finchè i chunk non sono completi
                 print("Download in corso", end='\n')
+                buff = bytes()
                 for count_chunk in range(0, num_chunk):
 
                     tmp = sock.recv(5)  # leggo la lunghezza del chunk
@@ -83,8 +80,11 @@ class Downloader(threading.Thread):
                         buffer += tmp
                         if len(tmp) == 0:
                             raise Exception("Socket close")
+                    buff += buffer
 
-                    f.write(buffer)  # Scrivo il contenuto del chunk nel file
+                # apro il file per la scrittura
+                f = open(Utility.PATHTEMP + name.rstrip(' ') + str(int(part)), "wb")
+                f.write(buff)  # Scrivo il contenuto del chunk nel file
                 f.close()
                 print('download parte completato')
 
