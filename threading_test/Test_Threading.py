@@ -23,7 +23,7 @@ class Test(threading.Thread):
             t = Parallel(semaphore, i)
             threads += [t]
             t.start()
-
+            print('numero thread in lista: ' + str(len(threads)))
         for x in threads:
             x.join()
 

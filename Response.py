@@ -77,7 +77,7 @@ class Response:
                 lFile=d[132:142].decode()
                 lPart=d[142:148].decode()
                 name=name.strip(' ')
-                testo=md5_i+' '+name
+                testo=(md5_i,name)
                 lista.append(testo)
                 testo=md5_i+'&|&'+name+'&|&'+lFile+'&|&'+lPart
                 listaAll.append(testo)

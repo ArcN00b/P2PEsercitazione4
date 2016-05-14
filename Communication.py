@@ -9,14 +9,22 @@ import random
 import threading
 import socket
 
+## il thread download manager riesce a gestire max download paralleli
 class Download_Manager(threading.Thread):
-    def __init__(self, listaPart, md5, name):
+    def __init__(self, progress_bar, var_progress, num_parts, listaPart, md5, name):
         threading.Thread.__init__(self)
+        self.progress_bar = progress_bar
+        self.num_parts = num_parts
         self.listaPart = listaPart
         self.md5 = md5
         self.name = name
+        self.var_progress = var_progress
 
     def run(self):
+        # lista join thread e semaforo con coda
+        semaphore = threading.BoundedSemaphore(Utility.NUMDOWNPARALLELI)
+        threads = []
+
         for i in range(0, len(self.listaPart)):
             # Prendo la parte interessata ed eseguo il download
             nPeer = len(self.listaPart[i]) - 1
@@ -24,12 +32,11 @@ class Download_Manager(threading.Thread):
             datiDown = self.listaPart[i][down + 1]
             datiDown = datiDown.split('-')
             parte = int(self.listaPart[i][0])
-            semaphore = threading.BoundedSemaphore(Utility.NUMDOWNPARALLELI)
-            threads = []
+
             # Chiamata al download
             try:
                 semaphore.acquire()
-                ts = Downloader(datiDown[0], datiDown[1], self.md5, self.name, parte)
+                ts = Downloader(semaphore, self.progress_bar, self.num_parts, datiDown[0], datiDown[1], self.md5, self.name, parte)
                 threads += [ts]
                 ts.start()
             except Exception as e:
@@ -51,6 +58,7 @@ class Download_Manager(threading.Thread):
             # nPart = len((Utility.database.findPartForMd5(md5))[0][1])
             Merge.Merger.merge(self.name, lenFile, lenPart)
             print("Merge completato")
+            self.var_progress.set('Download completato')
 
             # Avviso il tracker di avere il file completo
             try:
@@ -75,10 +83,12 @@ class Download_Manager(threading.Thread):
 
 class Downloader(threading.Thread):
     # Costruttore che inizializza gli attributi del Worker
-    def __init__(self, semaphore, ipp2p, pp2p, md5, name, part):
+    def __init__(self, semaphore, progress_bar, num_parts, ipp2p, pp2p, md5, name, part):
         # definizione thread del client
         threading.Thread.__init__(self)
         self.semaphore = semaphore
+        self.progress_bar = progress_bar
+        self.num_parts = num_parts
         self.ipp2p = ipp2p
         self.pp2p = pp2p
         self.md5 = md5
@@ -153,6 +163,7 @@ class Downloader(threading.Thread):
                 # apro il file per la scrittura
                 f = open(Utility.PATHTEMP + name.rstrip(' ') + str(int(part)), "wb")
                 f.write(buff)  # Scrivo il contenuto del chunk nel file
+                self.progress_bar.step(100/self.num_parts)
                 f.close()
                 sock.close()
 
@@ -170,6 +181,7 @@ class Downloader(threading.Thread):
 
                 num_parts = Response.rpad_ack(sockTracker)
                 Request.Request.close_socket(sockTracker)
+                logging.debug('parti del tracker: ' + str(num_parts))
 
                 # Aggiungo la parte alla lista delle parti nel database
                 strPart = (Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5))[0][0]

@@ -4,10 +4,13 @@ from Response import *
 from Request import *
 from Utility import *
 
-class Scaricamento:
+class Scaricamento(threading.Thread):
 
-    def __init__(self,dati):
+    def __init__(self,progress_bar, var_progress, dati):
+        threading.Thread.__init__(self)
         self.dati=dati
+        self.progress_bar = progress_bar
+        self.var_progress = var_progress
 
     def run(self):
         info=self.dati.split('&|&')
@@ -27,6 +30,9 @@ class Scaricamento:
         else:
             numPart8=(numPart//8)+1
             #parte='0'*numPart+'0'*(8-(numPart%8))
+
+        # scaricamento
+        self.var_progress.set('Sto scaricando..')
 
         parte='0'*numPart
         # aggiungo il file al database
@@ -68,11 +74,8 @@ class Scaricamento:
                 # ordino la lista mettendo all'inizio le parti possedute da meno peer
                 listaPart.sort(key=len)
                 # Prendo i primi 10 o meno
-                nDown=0
-                Utility.numDown=Utility.NUMDOWNPARALLELI
-                Utility.lock = False
 
-                t = Download_Manager(listaPart, md5, name, parte)
+                t = Download_Manager(self.progress_bar, self.var_progress, numPart, listaPart, md5, name)
                 t.start()
                 # attendo un tempo per rifare la fchu
                 # questo è un cilco di attesa attivo
