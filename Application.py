@@ -180,7 +180,8 @@ class Window(Frame):
             # creazione della cartella temporanea
             try:
                 os.stat(Utility.PATHTEMP)
-            except:
+                shutil.rmtree(Utility.PATHTEMP)
+            finally:
                 os.mkdir(Utility.PATHTEMP)
 
             if Utility.sessionID != None:
@@ -208,6 +209,10 @@ class Window(Frame):
                 ## si rimuove la cartella temporanea, i file
                 ## e le parti dal database associate
                 Utility.database.removeAllFileForSessionId(Utility.sessionID)
+                ## aggionamento lista con le rimozioni
+                self.file_aggiunti.clear()
+                self.list_file.delete(0,END)
+
                 try:
                     shutil.rmtree(Utility.PATHTEMP)
                 except Exception as e:
@@ -217,8 +222,36 @@ class Window(Frame):
             else:
                 self.status.set('FALLIMENTO DISCONNESSIONE - PARTI SCARICATE: ' + n_part)
                 logging.debug('Disconnessione non consentita hai della parti non scaricate da altri')
+                self.print_console('Disconnessione non consentita hai della parti non scaricate da altri')
         except Exception as e:
             logging.debug(e)
+
+    def btn_aggiungi_file_click(self):
+            path_file = askopenfilename(initialdir=Utility.PATHDIR)
+
+            if path_file != '':
+                sock_end = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
+                Request.add_file(sock_end, path_file)
+                num_parts = Response.add_file_ack(sock_end)
+                Response.close_socket(sock_end)
+
+                if num_parts != None:
+                    md5_file = Utility.generateMd5(path_file)
+                    file_name = path_file.split('/')[-1]
+                    elem = (md5_file, file_name, num_parts)
+
+                    ## aggiornamento database ocn l'aggiunta del file e delle parti
+                    Utility.database.addFile(Utility.sessionID, file_name, md5_file, os.stat(path_file).st_size,
+                                             Utility.LEN_PART)
+                    Utility.database.addPart(md5_file, Utility.sessionID, '1' * int(num_parts))
+
+                    Divide.Divider.divide(Utility.PATHDIR, Utility.PATHTEMP, file_name, Utility.LEN_PART)
+
+                    self.file_aggiunti.append(elem)
+                    self.list_file.insert(END, file_name)
+
+                    self.print_console('elemento aggiunto: ' + str(elem))
+                    logging.debug('aggiunto: ' + path_file)
 
     def btn_ricerca_click(self):
         logging.debug("STAI CERCANDO: "+self.en_ricerca.get())
@@ -261,33 +294,6 @@ class Window(Frame):
             self.prog_scaricamento.start(20)
         except Exception as e:
             logging.debug("NULLA SELEZIONATO")
-
-    def btn_aggiungi_file_click(self):
-        path_file = askopenfilename(initialdir=Utility.PATHDIR)
-
-        if path_file != '':
-            sock_end = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
-            Request.add_file(sock_end, path_file)
-            num_parts = Response.add_file_ack(sock_end)
-            Response.close_socket(sock_end)
-
-            if num_parts != None:
-
-                md5_file = Utility.generateMd5(path_file)
-                file_name = path_file.split('/')[-1]
-                elem = (md5_file, file_name, num_parts)
-
-                ## aggiornamento database ocn l'aggiunta del file e delle parti
-                Utility.database.addFile(Utility.sessionID, file_name, md5_file, os.stat(path_file).st_size, Utility.LEN_PART)
-                Utility.database.addPart(md5_file, Utility.sessionID, '1' * int(num_parts))
-
-                Divide.Divider.divide(Utility.PATHDIR, Utility.PATHTEMP, file_name, Utility.LEN_PART)
-
-                self.file_aggiunti.append(elem)
-                self.list_file.insert(END, file_name)
-
-                self.print_console('elemento aggiunto: ' + str(elem))
-                logging.debug('aggiunto: ' + path_file)
 
     def btn_rimuovi_file_click(self):
         try:

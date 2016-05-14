@@ -6,20 +6,20 @@ import socket
 import threading
 
 class Utility:
-    IPv4_TRACKER = "172.030.007.001"
-    IPv6_TRACKER = "fc00:0000:0000:0000:0000:0000:0007:0001"
+    IPv4_TRACKER = "172.030.007.010"
+    IPv6_TRACKER = "fc00:0000:0000:0000:0000:0000:0007:0010"
     IP_TRACKER = IPv4_TRACKER+'|'+IPv6_TRACKER
 
     PORT_TRACKER = 3000
 
-    IPV4_MY = "172.030.007.002"
-    IPV6_MY = "fc00:0000:0000:0000:0000:0000:0007:0002"
+    IPV4_MY = "172.030.007.003"
+    IPV6_MY = "fc00:0000:0000:0000:0000:0000:0007:0003"
     IP_MY = IPV4_MY+'|'+IPV6_MY
 
     PORT_MY = 12345
 
-    PATHDIR = '/home/simone/Immagini/'
-    PATHTEMP = '/home/simone/Immagini/temp/'
+    PATHDIR = '/home/marco/seedfolder/'
+    PATHTEMP = '/home/marco/seedfolder/temp/'
 
     ## variabili condivise in piu' parti del programma
     LEN_PART = 262144
