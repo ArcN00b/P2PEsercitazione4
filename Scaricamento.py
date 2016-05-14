@@ -69,43 +69,15 @@ class Scaricamento:
                 listaPart.sort(key=len)
                 # Prendo i primi 10 o meno
                 nDown=0
-                Utility.numDown=Utility.numDownParalleli
+                Utility.numDown=Utility.NUMDOWNPARALLELI
                 Utility.lock = False
-                for i in  range(0,len(listaPart)):
-                    # Prendo la parte interessata ed eseguo il download
-                    nPeer=len(listaPart[i])-1
-                    down=random.randint(0,nPeer-1)
-                    datiDown=listaPart[i][down+1]
-                    datiDown=datiDown.split('-')
-                    parte=int(listaPart[i][0])
-                    nDown=nDown+1
-                    #Chiamata al download
-                    try:
-                        ts = Downloader(datiDown[0], datiDown[1], md5,name, parte)
-                        ts.start()
-                    except Exception as e:
-                        logging.debug("ERROR on Download " + str(e))
-                    #Controllo se ho gia fatto almeno 10 download
-                    if nDown>=Utility.numDownParalleli:
-                        break
 
+                t = Download_Manager(listaPart, md5, name, parte)
+                t.start()
                 # attendo un tempo per rifare la fchu
                 # questo è un cilco di attesa attivo
 
-                #Utility.semaforo.acquire()
-
-                time.sleep(Utility.attesa)
-
-                '''a=time.strftime("%M:%S")
-                a=a.split(':')
-                a=int(a[0])*60+int(a[1])
-                attesa=60 # Secondi di attesa
-                diff=0
-                while diff<Utility.attesa:
-                    b=time.strftime("%M:%S")
-                    b=b.split(':')
-                    b=int(b[0])*60+int(b[1])
-                    diff=b-a'''
+                time.sleep(Utility.ATTESA)
 
                 #conto il numero di parti scaricate, interrogando il database
                 myPart=Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5)

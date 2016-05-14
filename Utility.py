@@ -12,11 +12,13 @@ class Utility:
 
     PORT_TRACKER = 3000
 
-    IPV4_MY = "172.030.007.003"
-    IPV6_MY = "fc00:0000:0000:0000:0000:0000:0007:0003"
+    IPV4_MY = "172.030.007.007"
+    IPV6_MY = "fc00:0000:0000:0000:0000:0000:0007:0007"
     IP_MY = IPV4_MY+'|'+IPV6_MY
 
     PORT_MY = 12345
+    ATTESA=60  # Attesa prima di rieseguire una FCHU
+    NUMDOWNPARALLELI=20
 
     PATHDIR = '/home/marco/seedfolder/'
     PATHTEMP = '/home/marco/seedfolder/temp/'
@@ -27,11 +29,11 @@ class Utility:
     sessionID = ''
     listLastSearch=[]
     numDown=0
-    numDownParalleli=20
+
     lock = False
 
     #semaforo=threading.Semaphore(1)
-    attesa=20 # Attesa prima di rieseguire una FCHU
+
     database = ManageDB.ManageDB()
 
     # Metodo per trasformare un vettore di byte nella stringa di bit

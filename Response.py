@@ -39,7 +39,7 @@ class Response:
                 return True, n_part_own
 
         except Exception as e:
-            logging.debug("ERROR on Receive logout_ack" + str(e))
+            raise Exception("ERROR on Receive logout_ack" + str(e))
 
     ## metodo per ricevere la risposta dalla look
     ## quindi si riceve 'ALOO'
@@ -142,7 +142,7 @@ class Response:
             return num_parts
 
         except Exception as e:
-            logging.debug("ERROR on Receive aadr" + str(e))
+            raise Exception("ERROR on Receive aadr" + str(e))
 
 
     ## metodo per la ricezione dell'ack per
@@ -156,7 +156,7 @@ class Response:
             return num_parts
 
         except Exception as e:
-            logging.debug("ERROR on Receive apad" + str(e))
+            raise Exception("ERROR on Receive apad" + str(e))
 
     ## questo metodo chiude la socket verificando se
     ## effettivamente si riesce a chiudere
@@ -166,4 +166,4 @@ class Response:
             sock_end.shutdown(1)
             sock_end.close()
         except Exception as e:
-            logging.debug("ERROR on Close " + str(e))
+            raise Exception("ERROR on Close " + str(e))
