@@ -40,6 +40,7 @@ class Scaricamento(threading.Thread):
         # aggiungo al database la stringa
         Utility.database.addPart(md5, Utility.sessionID, parte)
         partiScaricate=0
+        semaphore = threading.BoundedSemaphore(Utility.NUMDOWNPARALLELI)
         while partiScaricate!=numPart:
             valid_request=True
             try:
@@ -75,7 +76,7 @@ class Scaricamento(threading.Thread):
                 listaPart.sort(key=len)
                 # Prendo i primi 10 o meno
 
-                t = Download_Manager(self.progress_bar, self.var_progress, numPart, listaPart, md5, name)
+                t = Download_Manager(self.progress_bar, self.var_progress, numPart, semaphore, listaPart, md5, name)
                 t.start()
                 # attendo un tempo per rifare la fchu
                 # questo è un cilco di attesa attivo

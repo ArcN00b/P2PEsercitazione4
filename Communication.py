@@ -11,10 +11,11 @@ import socket
 
 ## il thread download manager riesce a gestire max download paralleli
 class Download_Manager(threading.Thread):
-    def __init__(self, progress_bar, var_progress, num_parts, listaPart, md5, name):
+    def __init__(self, progress_bar, var_progress, num_parts, semaphore, listaPart, md5, name):
         threading.Thread.__init__(self)
         self.progress_bar = progress_bar
         self.num_parts = num_parts
+        self.semaphore = semaphore
         self.listaPart = listaPart
         self.md5 = md5
         self.name = name
@@ -22,7 +23,6 @@ class Download_Manager(threading.Thread):
 
     def run(self):
         # lista join thread e semaforo con coda
-        semaphore = threading.BoundedSemaphore(Utility.NUMDOWNPARALLELI)
         threads = []
 
         for i in range(0, len(self.listaPart)):
@@ -35,12 +35,12 @@ class Download_Manager(threading.Thread):
 
             # Chiamata al download
             try:
-                semaphore.acquire()
-                ts = Downloader(semaphore, self.progress_bar, self.num_parts, datiDown[0], datiDown[1], self.md5, self.name, parte)
+                self.semaphore.acquire()
+                ts = Downloader(self.semaphore, self.progress_bar, self.num_parts, datiDown[0], datiDown[1], self.md5, self.name, parte)
                 threads += [ts]
                 ts.start()
             except Exception as e:
-                semaphore.release()
+                self.semaphore.release()
                 logging.debug("ERROR on Download " + str(e))
 
         for t in threads:
@@ -113,7 +113,6 @@ class Downloader(threading.Thread):
             ind = ipv6
             sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 
-        sock.settimeout(10)
         try:
             sock.connect((ind, int(pp2p)))
             mess = 'RETP' + md5 + '{:0>8}'.format(int(part))
@@ -125,6 +124,7 @@ class Downloader(threading.Thread):
             # ricevo i primi 10 Byte che sono "ARET" + n_chunk
             recv_mess = sock.recv(10).decode()
         except Exception as e:
+            sock.close()
             raise Exception("ERRORE :" + str(e))
 
         if recv_mess[:4] == "AREP":
