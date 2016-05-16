@@ -28,6 +28,7 @@ class Utility:
     listLastSearch=[]
     numDown=0
     numDownParalleli=10
+    blocco = threading.Lock()
     lock = False
 
     #semaforo=threading.Semaphore(1)
