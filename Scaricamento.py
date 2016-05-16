@@ -40,8 +40,11 @@ class Scaricamento(threading.Thread):
         # aggiungo al database la stringa
         Utility.database.addPart(md5, Utility.sessionID, parte)
         partiScaricate=0
+        Utility.blocco.acquire()
+        Utility.lock = False
+        Utility.blocco.release()
         semaphore = threading.BoundedSemaphore(Utility.NUMDOWNPARALLELI)
-        while partiScaricate!=numPart:
+        while partiScaricate!=numPart and not Utility.lock:
             valid_request=True
             try:
                 sock = Request.create_socket(Utility.IP_TRACKER,Utility.PORT_TRACKER)

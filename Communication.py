@@ -48,7 +48,10 @@ class Download_Manager(threading.Thread):
 
         # Verifico se sono stati scaricati tutti i file e in tal caso eseguo il merge
         # Verifico se non è presente nessun 0 nella lista delle parti
-        if not ('0' in ((Utility.database.findPartForMd5(self.md5))[0][1])):
+        if not Utility.lock and not ('0' in ((Utility.database.findPartForMd5(self.md5))[0][1])):
+            Utility.blocco.acquire()
+            Utility.lock = True
+            Utility.blocco.release()
             # Ho tutte le parti ed eseguo il merge di tutte le parti di file
             # Prelevo lenFile e lenPart rispettivamente in row[0][0] e in row[0][1]
             row = Utility.database.findFile(0, self.md5, 0, 4)
