@@ -301,7 +301,7 @@ class Window(Frame):
             # prendo l'elemento da scaricare
             info = Utility.listLastSearch[index]
             #Classe che esegue il download di un file
-            down=Scaricamento(self.prog_scaricamento, self.var_progresso, info)
+            down=Scaricamento(self.prog_scaricamento, self.var_progresso, self.list_risultati, info)
             down.start()
         except Exception as e:
             logging.debug("NULLA SELEZIONATO")

@@ -6,11 +6,12 @@ from Utility import *
 
 class Scaricamento(threading.Thread):
 
-    def __init__(self,progress_bar, var_progress, dati):
+    def __init__(self,progress_bar, var_progress, list_risultati, dati):
         threading.Thread.__init__(self)
         self.dati=dati
         self.progress_bar = progress_bar
         self.var_progress = var_progress
+        self.list_risultati
 
     def run(self):
         info=self.dati.split('&|&')
@@ -40,11 +41,8 @@ class Scaricamento(threading.Thread):
         # aggiungo al database la stringa
         Utility.database.addPart(md5, Utility.sessionID, parte)
         partiScaricate=0
-        Utility.blocco.acquire()
-        Utility.lock = False
-        Utility.blocco.release()
         semaphore = threading.BoundedSemaphore(Utility.NUMDOWNPARALLELI)
-        while partiScaricate!=numPart and not Utility.lock:
+        while partiScaricate!=numPart:
             valid_request=True
             try:
                 sock = Request.create_socket(Utility.IP_TRACKER,Utility.PORT_TRACKER)
