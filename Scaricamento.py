@@ -80,11 +80,7 @@ class Scaricamento(threading.Thread):
                 # Prendo i primi 10 o meno
 
                 t = Download_Manager(self.progress_bar, self.var_progress, numPart, semaphore, listaPart, md5, name)
-                t.start()
-                # attendo un tempo per rifare la fchu
-                # questo è un cilco di attesa attivo
-
-                time.sleep(Utility.ATTESA)
+                t.run()
 
                 #conto il numero di parti scaricate, interrogando il database
                 myPart=Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5)

@@ -10,9 +10,8 @@ import threading
 import socket
 
 ## il thread download manager riesce a gestire max download paralleli
-class Download_Manager(threading.Thread):
+class Download_Manager:
     def __init__(self, progress_bar, var_progress, num_parts, semaphore, listaPart, md5, name):
-        threading.Thread.__init__(self)
         self.progress_bar = progress_bar
         self.num_parts = num_parts
         self.semaphore = semaphore
@@ -25,7 +24,12 @@ class Download_Manager(threading.Thread):
         # lista join thread e semaforo con coda
         threads = []
 
-        for i in range(0, len(self.listaPart)):
+        inizio = time.strftime("%M:%S")
+        inizio = inizio.split(':')
+        inizio = int(inizio[0]) * 60 + int(inizio[1])
+        diff = 0
+        i = 0
+        while i < range(0, len(self.listaPart)) and diff < Utility.ATTESA:
             # Prendo la parte interessata ed eseguo il download
             nPeer = len(self.listaPart[i]) - 1
             down = random.randint(0, nPeer - 1)
@@ -42,6 +46,12 @@ class Download_Manager(threading.Thread):
             except Exception as e:
                 self.semaphore.release()
                 logging.debug("ERROR on Download " + str(e))
+
+            fine = time.strftime("%M:%S")
+            fine = fine.split(':')
+            fine = int(fine[0]) * 60 + int(fine[1])
+            diff = fine - inizio
+            i += 1
 
         for t in threads:
             t.join()
