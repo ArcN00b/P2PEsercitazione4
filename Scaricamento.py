@@ -3,15 +3,17 @@ from Communication import *
 from Response import *
 from Request import *
 from Utility import *
+from tkinter import *
 
 class Scaricamento(threading.Thread):
 
-    def __init__(self,progress_bar, var_progress, list_risultati, dati):
+    def __init__(self,progress_bar, var_progress, file_aggiunti, list_file, dati):
         threading.Thread.__init__(self)
         self.dati=dati
         self.progress_bar = progress_bar
         self.var_progress = var_progress
-        self.list_risultati
+        self.file_aggiunti = file_aggiunti
+        self.list_file = list_file
 
     def run(self):
         info=self.dati.split('&|&')
@@ -84,4 +86,6 @@ class Scaricamento(threading.Thread):
                 myPart=Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5)
                 partiScaricate=(myPart[0][0]).count('1')
 
-
+        elem = (md5, name, numPart)
+        self.file_aggiunti.append(elem)
+        self.list_file.insert(END, name)

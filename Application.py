@@ -267,10 +267,9 @@ class Window(Frame):
             self.print_console('Non puoi aggiungere se non sei connesso al tracker')
 
     def btn_ricerca_click(self):
-        logging.debug("STAI CERCANDO: "+self.en_ricerca.get())
-        # Todo da testare in locale prima
         try:
             if Utility.sessionID!= '':
+                logging.debug("STAI CERCANDO: " + self.en_ricerca.get())
                 # prendo il campo di ricerca
                 serch=self.en_ricerca.get().strip(' ')
                 # Creo la socket di connessione al tracker
@@ -289,6 +288,8 @@ class Window(Frame):
                 # inserisco tutti gli elementi della lista nella lista nel form
                 for value in self.risultati:
                     self.list_risultati.insert(END, value[1])
+            else:
+                self.print_console('Non puoi ricercare se non sei collegato')
         except Exception as e:
             logging.debug(e)
 
@@ -301,7 +302,7 @@ class Window(Frame):
             # prendo l'elemento da scaricare
             info = Utility.listLastSearch[index]
             #Classe che esegue il download di un file
-            down=Scaricamento(self.prog_scaricamento, self.var_progresso, self.list_risultati, info)
+            down=Scaricamento(self.prog_scaricamento, self.var_progresso, self.file_aggiunti, self.list_file, info)
             down.start()
         except Exception as e:
             logging.debug("NULLA SELEZIONATO")

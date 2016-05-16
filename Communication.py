@@ -29,7 +29,7 @@ class Download_Manager:
         inizio = int(inizio[0]) * 60 + int(inizio[1])
         diff = 0
         i = 0
-        while i < range(0, len(self.listaPart)) and diff < Utility.ATTESA:
+        while (i < len(self.listaPart)) and (diff < Utility.ATTESA):
             # Prendo la parte interessata ed eseguo il download
             nPeer = len(self.listaPart[i]) - 1
             down = random.randint(0, nPeer - 1)
@@ -173,7 +173,7 @@ class Downloader(threading.Thread):
                 # apro il file per la scrittura
                 f = open(Utility.PATHTEMP + name.rstrip(' ') + str(int(part)), "wb")
                 f.write(buff)  # Scrivo il contenuto del chunk nel file
-                self.progress_bar.step(100/self.num_parts)
+
                 f.close()
                 sock.close()
 
@@ -194,13 +194,18 @@ class Downloader(threading.Thread):
                 logging.debug('parti del tracker: ' + str(num_parts))
 
                 # Aggiungo la parte alla lista delle parti nel database
+                Utility.blocco.acquire()
                 strPart = (Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5))[0][0]
                 strPart = strPart[:part] + '1' + strPart[part+1:]
                 Utility.database.updatePart(Utility.sessionID, md5, strPart)
+                Utility.blocco.release()
 
             except Exception as e:
                 raise Exception('-- Errore comunicazione parte scaricata RPAD: ' + e)
 
+        Utility.blocco.acquire()
+        self.progress_bar.step(100 / self.num_parts)
+        Utility.blocco.release()
         self.semaphore.release()
 
 
