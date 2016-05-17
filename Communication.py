@@ -11,14 +11,14 @@ import socket
 
 ## il thread download manager riesce a gestire max download paralleli
 class Download_Manager:
-    def __init__(self, progress_bar, var_progress, num_parts, semaphore, listaPart, md5, name):
+    def __init__(self, progress_bar, var_progress, num_parts, listaPart, md5, name):
         self.progress_bar = progress_bar
         self.num_parts = num_parts
-        self.semaphore = semaphore
         self.listaPart = listaPart
         self.md5 = md5
         self.name = name
         self.var_progress = var_progress
+        self.semaphore = threading.BoundedSemaphore(Utility.NUMDOWNPARALLELI)
 
     def run(self):
         # lista join thread e semaforo con coda
@@ -70,7 +70,7 @@ class Download_Manager:
             print("Merge completato")
             self.var_progress.set('Download completato')
 
-            # Avviso il tracker di avere il file completo
+            ''' Avviso il tracker di avere il file completo
             try:
                 msgFile = 'ADDR' + Utility.sessionID + '{:0>10}'.format(lenFile) + '{:0>6}'.format(lenPart) + self.name.ljust(100) + self.md5
                 addTracker = Request.Request.create_socket(Utility.IP_TRACKER, int(Utility.PORT_TRACKER))
@@ -89,7 +89,7 @@ class Download_Manager:
                     return
 
             except Exception as e:
-                print(e)
+                print(e)'''
 
 class Downloader(threading.Thread):
     # Costruttore che inizializza gli attributi del Worker
@@ -122,7 +122,7 @@ class Downloader(threading.Thread):
         else:
             ind = ipv6
             sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-
+        sock.settimeout(10)
         try:
             sock.connect((ind, int(pp2p)))
             mess = 'RETP' + md5 + '{:0>8}'.format(int(part))
@@ -201,7 +201,7 @@ class Downloader(threading.Thread):
                 Utility.blocco.release()
 
             except Exception as e:
-                raise Exception('-- Errore comunicazione parte scaricata RPAD: ' + e)
+                raise Exception('-- Errore comunicazione parte scaricata RPAD: ' + str(e))
 
         Utility.blocco.acquire()
         self.progress_bar.step(100 / self.num_parts)

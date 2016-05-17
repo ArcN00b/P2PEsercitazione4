@@ -241,7 +241,7 @@ class ManageDB:
             count = c.fetchall()
 
             if (count[0][0]>0):
-                c.execute("DELETE FROM FILES WHERE SESSIONID=:SID", {"SID": sessionId})
+                #c.execute("DELETE FROM FILES WHERE SESSIONID=:SID", {"SID": sessionId})
                 c.execute("DELETE FROM PARTS WHERE SESSIONID=:SID", {"SID": sessionId})
                 conn.commit()
 
@@ -497,7 +497,7 @@ class ManageDB:
     # Ritorna la parte dato un md5 e un sessionId
     def findPartForMd5AndSessionId(self,SessionId,Md5):
         try:
-            count=None
+
             # Creo la connessione al database e creo un cursore ad esso
             conn = sqlite3.connect("data.db")
             c = conn.cursor()

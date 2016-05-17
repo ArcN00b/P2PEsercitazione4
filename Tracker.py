@@ -40,8 +40,8 @@ class Tracker(threading.Thread):
             print('Errore durante la creazione del socket IPv6: ' + msg[1])
             exit(0)
         # Metto il server in ascolto per eventuali richieste sui socket appena creati
-        self.server_socket4.listen(5)
-        self.server_socket6.listen(5)
+        self.server_socket4.listen(50)
+        self.server_socket6.listen(50)
 
         #Ciclo continuo
         while self.running:

@@ -18,7 +18,7 @@ class Utility:
 
     PORT_MY = 12345
     ATTESA=60  # Attesa prima di rieseguire una FCHU
-    NUMDOWNPARALLELI=20
+    NUMDOWNPARALLELI=10
 
     PATHDIR = '/home/marco/seedfolder/'
     PATHTEMP = '/home/marco/seedfolder/temp/'

@@ -43,7 +43,7 @@ class Scaricamento(threading.Thread):
         # aggiungo al database la stringa
         Utility.database.addPart(md5, Utility.sessionID, parte)
         partiScaricate=0
-        semaphore = threading.BoundedSemaphore(Utility.NUMDOWNPARALLELI)
+
         while partiScaricate!=numPart:
             valid_request=True
             try:
@@ -58,7 +58,7 @@ class Scaricamento(threading.Thread):
                 myPart=Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5)
                 myPart=myPart[0][0]
             except Exception as e:
-                print("Errore Aggiornamento parti, reinvio richiesta"+str(e))
+                print("Errore Aggiornamento parti, reinvio richiesta "+str(e))
                 valid_request=False
 
             # Da qui in avanti vi e tutta la logica di funzionamento del scaricamento
@@ -79,7 +79,7 @@ class Scaricamento(threading.Thread):
                 listaPart.sort(key=len)
                 # Prendo i primi 10 o meno
 
-                t = Download_Manager(self.progress_bar, self.var_progress, numPart, semaphore, listaPart, md5, name)
+                t = Download_Manager(self.progress_bar, self.var_progress, numPart, listaPart, md5, name)
                 t.run()
 
                 #conto il numero di parti scaricate, interrogando il database
