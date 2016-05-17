@@ -302,7 +302,7 @@ class Window(Frame):
             # prendo l'elemento da scaricare
             info = Utility.listLastSearch[index]
             #Classe che esegue il download di un file
-            md5_selected = self.file_aggiunti[index][0]
+            md5_selected = self.risultati[index][0]
             result = Utility.database.findFile(Utility.sessionID, md5_selected, None, 1)
             if len(result) == 0:
                 down=Scaricamento(self.prog_scaricamento, self.var_progresso, self.file_aggiunti, self.list_file, info)
@@ -310,7 +310,7 @@ class Window(Frame):
             else:
                 self.print_console('hai già questo file! ')
         except Exception as e:
-            logging.debug("NULLA SELEZIONATO")
+            logging.debug("NULLA SELEZIONATO:  " + str(e))
 
     def btn_rimuovi_file_click(self):
         try:
