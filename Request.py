@@ -31,7 +31,7 @@ class Request:
             ## ritorno della socket al chiamante
             return sock
         except Exception as e:
-            raise Exception('Errore Peer down " + ip_tracker + " " + str(port_tracker)')
+            raise Exception("Errore Peer down " + ip_tracker + "  " + str(port_tracker))
 
     ## questo metodo che riceve una socket scrive la login su tale
     ## backend verificando l'invio
@@ -84,8 +84,9 @@ class Request:
     def rpad(socket, ssid, md5, partnum):
         try:
             msg = "RPAD" + ssid + md5 + str(partnum).zfill(8)
-            socket.send(msg.encode())
+            num_send = socket.send(msg.encode())
             logging.debug("Inviata rpad")
+            return num_send
         except Exception as e:
             raise Exception("Errore rpad " + str(e))
 

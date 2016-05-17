@@ -3,11 +3,17 @@ from Communication import *
 from Response import *
 from Request import *
 from Utility import *
+from tkinter import *
 
-class Scaricamento:
+class Scaricamento(threading.Thread):
 
-    def __init__(self,dati):
+    def __init__(self,progress_bar, var_progress, file_aggiunti, list_file, dati):
+        threading.Thread.__init__(self)
         self.dati=dati
+        self.progress_bar = progress_bar
+        self.var_progress = var_progress
+        self.file_aggiunti = file_aggiunti
+        self.list_file = list_file
 
     def run(self):
         info=self.dati.split('&|&')
@@ -28,16 +34,17 @@ class Scaricamento:
             numPart8=(numPart//8)+1
             #parte='0'*numPart+'0'*(8-(numPart%8))
 
+        # scaricamento
+        self.var_progress.set('Sto scaricando..')
+
         parte='0'*numPart
         # aggiungo il file al database
         Utility.database.addFile(Utility.sessionID, name, md5, lFile, lPart)
         # aggiungo al database la stringa
         Utility.database.addPart(md5, Utility.sessionID, parte)
         partiScaricate=0
-        Utility.blocco.acquire()
-        Utility.lock = False
-        Utility.blocco.release()
-        while partiScaricate!=numPart and Utility.lock==False:
+        semaphore = threading.BoundedSemaphore(Utility.NUMDOWNPARALLELI)
+        while partiScaricate!=numPart:
             valid_request=True
             try:
                 sock = Request.create_socket(Utility.IP_TRACKER,Utility.PORT_TRACKER)
@@ -71,46 +78,14 @@ class Scaricamento:
                 # ordino la lista mettendo all'inizio le parti possedute da meno peer
                 listaPart.sort(key=len)
                 # Prendo i primi 10 o meno
-                nDown=0
-                Utility.numDown=Utility.numDownParalleli
-                for i in  range(0,len(listaPart)):
-                    # Prendo la parte interessata ed eseguo il download
-                    nPeer=len(listaPart[i])-1
-                    down=random.randint(0,nPeer-1)
-                    datiDown=listaPart[i][down+1]
-                    datiDown=datiDown.split('-')
-                    parte=int(listaPart[i][0])
-                    nDown=nDown+1
-                    #Chiamata al download
-                    try:
-                        ts = Downloader(datiDown[0], datiDown[1], md5,name, parte)
-                        ts.start()
-                    except Exception as e:
-                        logging.debug("ERROR on Download " + str(e))
-                    #Controllo se ho gia fatto almeno 10 download
-                    if nDown>=Utility.numDownParalleli:
-                        break
 
-                # attendo un tempo per rifare la fchu
-                # questo è un cilco di attesa attivo
-
-                #Utility.semaforo.acquire()
-
-                time.sleep(Utility.attesa)
-
-                '''a=time.strftime("%M:%S")
-                a=a.split(':')
-                a=int(a[0])*60+int(a[1])
-                attesa=60 # Secondi di attesa
-                diff=0
-                while diff<Utility.attesa:
-                    b=time.strftime("%M:%S")
-                    b=b.split(':')
-                    b=int(b[0])*60+int(b[1])
-                    diff=b-a'''
+                t = Download_Manager(self.progress_bar, self.var_progress, numPart, semaphore, listaPart, md5, name)
+                t.run()
 
                 #conto il numero di parti scaricate, interrogando il database
                 myPart=Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5)
                 partiScaricate=(myPart[0][0]).count('1')
 
-
+        elem = (md5, name, numPart)
+        self.file_aggiunti.append(elem)
+        self.list_file.insert(END, name)

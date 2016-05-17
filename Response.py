@@ -39,7 +39,7 @@ class Response:
                 return True, n_part_own
 
         except Exception as e:
-            logging.debug("ERROR on Receive logout_ack" + str(e))
+            raise Exception("ERROR on Receive logout_ack" + str(e))
 
     ## metodo per ricevere la risposta dalla look
     ## quindi si riceve 'ALOO'
@@ -77,7 +77,7 @@ class Response:
                 lFile=d[132:142].decode()
                 lPart=d[142:148].decode()
                 name=name.strip(' ')
-                testo=md5_i+' '+name
+                testo=(md5_i,name)
                 lista.append(testo)
                 testo=md5_i+'&|&'+name+'&|&'+lFile+'&|&'+lPart
                 listaAll.append(testo)
@@ -92,7 +92,6 @@ class Response:
     # Metodo per gestire la AFCH
     @staticmethod
     def fchu_ack(socket,numPart8,numPart):
-
         listaPeer=[] # E una lista di liste,
         data=socket.recv(7)
         dim=7
@@ -143,7 +142,7 @@ class Response:
             return num_parts
 
         except Exception as e:
-            logging.debug("ERROR on Receive aadr" + str(e))
+            raise Exception("ERROR on Receive aadr" + str(e))
 
 
     ## metodo per la ricezione dell'ack per
@@ -157,7 +156,7 @@ class Response:
             return num_parts
 
         except Exception as e:
-            logging.debug("ERROR on Receive apad" + str(e))
+            raise Exception("ERROR on Receive apad" + str(e))
 
     ## questo metodo chiude la socket verificando se
     ## effettivamente si riesce a chiudere
@@ -167,4 +166,4 @@ class Response:
             sock_end.shutdown(1)
             sock_end.close()
         except Exception as e:
-            logging.debug("ERROR on Close " + str(e))
+            raise Exception("ERROR on Close " + str(e))

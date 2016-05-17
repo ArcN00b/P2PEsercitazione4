@@ -209,10 +209,6 @@ class Worker(threading.Thread):
                     # Chiudo il file
                     f.close()
 
-            elif command == "AREP":
-                True
-                # Todo da scrivere
-
             elif command == "RPAD":
                 # Todo da testare
 
@@ -252,10 +248,7 @@ class Worker(threading.Thread):
                 msgRet = "APAD" + str(partOwn).zfill(8)
                 self.client.sendall(msgRet.encode())
 
-
             elif command == "LOGO":
-                # Todo da testare
-
                 # Ricavo la lista dei file inerenti al sessionID di chi richiede il logout
                 ssId = fields[0]
                 listFile = Utility.database.listFileForSessionId(ssId) #MD5,NAME,LENFILE,LENPART

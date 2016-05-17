@@ -6,33 +6,33 @@ import socket
 import threading
 
 class Utility:
-    IPv4_TRACKER = "172.030.007.001"
-    IPv6_TRACKER = "fc00:0000:0000:0000:0000:0000:0007:0001"
+    IPv4_TRACKER = "172.030.007.010"
+    IPv6_TRACKER = "fc00:0000:0000:0000:0000:0000:0007:0010"
     IP_TRACKER = IPv4_TRACKER+'|'+IPv6_TRACKER
 
     PORT_TRACKER = 3000
 
-    IPV4_MY = "172.030.007.001"
-    IPV6_MY = "fc00:0000:0000:0000:0000:0000:0007:0001"
+    IPV4_MY = "172.030.007.007"
+    IPV6_MY = "fc00:0000:0000:0000:0000:0000:0007:0007"
     IP_MY = IPV4_MY+'|'+IPV6_MY
 
     PORT_MY = 12345
+    ATTESA=60  # Attesa prima di rieseguire una FCHU
+    NUMDOWNPARALLELI=20
 
-    PATHDIR = '/home/flavio/Scrivania/File/'
-    PATHTEMP = '/home/flavio/Scrivania/File/temp/'
+    PATHDIR = '/home/marco/seedfolder/'
+    PATHTEMP = '/home/marco/seedfolder/temp/'
 
     ## variabili condivise in piu' parti del programma
     LEN_PART = 262144
 
     sessionID = ''
     listLastSearch=[]
-    numDown=0
-    numDownParalleli=10
     blocco = threading.Lock()
     lock = False
 
     #semaforo=threading.Semaphore(1)
-    attesa=10 # Attesa prima di rieseguire una FCHU
+
     database = ManageDB.ManageDB()
 
     # Metodo per trasformare un vettore di byte nella stringa di bit

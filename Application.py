@@ -112,8 +112,10 @@ class Window(Frame):
         self.btn_ricerca.configure(text="RICERCA", width=self.larg_bottoni)
         self.btn_ricerca.pack(side=TOP, padx=self.imb_x, pady=self.imb_y)
 
-        self.lb_progresso = Label(self.quadro_sinistro_ricerca, text='Progresso Scaricamento', background="white")
-        self.lb_progresso.pack(side=TOP, padx=self.imb_x, pady=self.imb_y)
+        self.var_progresso = StringVar()
+        self.lb_progresso = Label(self.quadro_sinistro_ricerca, textvariable=self.var_progresso, background="white")
+        self.lb_progresso.pack(fill=BOTH, side=TOP, padx=self.imb_x, pady=self.imb_y)
+        self.var_progresso.set('Progresso Scaricamento')
 
         self.prog_scaricamento = Progressbar(self.quadro_sinistro_ricerca, orient='horizontal', mode='determinate')
         self.prog_scaricamento.pack(side=TOP, fill=BOTH, padx=self.imb_x, pady=self.imb_y)
@@ -163,9 +165,6 @@ class Window(Frame):
         self.print_console('aggiornamento tracker ip4: ' + self.tracker_ip4.get())
         self.print_console('aggiornamento tracker ip6: ' + self.tracker_ip6.get())
 
-    ## def client_exit(self):
-    ##     exit()
-
     def print_console(self, mess):
         self.text_console.insert(END,mess+'\n')
 
@@ -180,7 +179,10 @@ class Window(Frame):
             # creazione della cartella temporanea
             try:
                 os.stat(Utility.PATHTEMP)
-            except:
+                shutil.rmtree(Utility.PATHTEMP)
+            except FileNotFoundError as e:
+                pass
+            finally:
                 os.mkdir(Utility.PATHTEMP)
 
             if Utility.sessionID != None:
@@ -208,6 +210,11 @@ class Window(Frame):
                 ## si rimuove la cartella temporanea, i file
                 ## e le parti dal database associate
                 Utility.database.removeAllFileForSessionId(Utility.sessionID)
+                Utility.sessionID = ''
+                ## aggionamento lista con le rimozioni
+                self.file_aggiunti.clear()
+                self.list_file.delete(0,END)
+
                 try:
                     shutil.rmtree(Utility.PATHTEMP)
                 except Exception as e:
@@ -217,14 +224,52 @@ class Window(Frame):
             else:
                 self.status.set('FALLIMENTO DISCONNESSIONE - PARTI SCARICATE: ' + n_part)
                 logging.debug('Disconnessione non consentita hai della parti non scaricate da altri')
+                self.print_console('Disconnessione non consentita hai della parti non scaricate da altri')
         except Exception as e:
             logging.debug(e)
 
+    def btn_aggiungi_file_click(self):
+
+        if Utility.sessionID != '':
+            path_file = askopenfilename(initialdir=Utility.PATHDIR)
+            # controllo se il database ha gia' il file
+
+            if path_file != '':
+                result = Utility.database.findFile(Utility.sessionID, Utility.generateMd5(path_file), None, 1)
+
+                if len(result) == 0:
+                    sock_end = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
+                    Request.add_file(sock_end, path_file)
+                    num_parts = Response.add_file_ack(sock_end)
+                    Response.close_socket(sock_end)
+
+                    if num_parts != None:
+                        md5_file = Utility.generateMd5(path_file)
+                        file_name = path_file.split('/')[-1]
+                        elem = (md5_file, file_name, num_parts)
+
+                        ## aggiornamento database ocn l'aggiunta del file e delle parti
+                        Utility.database.addFile(Utility.sessionID, file_name, md5_file, os.stat(path_file).st_size,Utility.LEN_PART)
+                        Utility.database.addPart(md5_file, Utility.sessionID, '1' * int(num_parts))
+
+                        Divide.Divider.divide(Utility.PATHDIR, Utility.PATHTEMP, file_name, Utility.LEN_PART)
+
+                        self.file_aggiunti.append(elem)
+                        self.list_file.insert(END, file_name)
+
+                        self.print_console('elemento aggiunto: ' + str(elem))
+                        logging.debug('aggiunto: ' + path_file)
+                else:
+                    self.print_console('file già presente nella condivisione')
+            else:
+                self.print_console('file non selezionato')
+        else:
+            self.print_console('Non puoi aggiungere se non sei connesso al tracker')
+
     def btn_ricerca_click(self):
-        logging.debug("STAI CERCANDO: "+self.en_ricerca.get())
-        # Todo da testare in locale prima
         try:
             if Utility.sessionID!= '':
+                logging.debug("STAI CERCANDO: " + self.en_ricerca.get())
                 # prendo il campo di ricerca
                 serch=self.en_ricerca.get().strip(' ')
                 # Creo la socket di connessione al tracker
@@ -242,7 +287,9 @@ class Window(Frame):
 
                 # inserisco tutti gli elementi della lista nella lista nel form
                 for value in self.risultati:
-                    self.list_risultati.insert(END, value)
+                    self.list_risultati.insert(END, value[1])
+            else:
+                self.print_console('Non puoi ricercare se non sei collegato')
         except Exception as e:
             logging.debug(e)
 
@@ -251,43 +298,19 @@ class Window(Frame):
             # Todo da testare in locale prima
             # indice elemento da scaricare
             index = self.list_risultati.curselection()[0]
-            logging.debug("selezionato: " + self.risultati[index])
+            logging.debug("selezionato: " + str(self.risultati[index]))
             # prendo l'elemento da scaricare
             info = Utility.listLastSearch[index]
-
             #Classe che esegue il download di un file
-            down=Scaricamento(info)
-            down.run()
-            self.prog_scaricamento.start(20)
+            md5_selected = self.file_aggiunti[index][0]
+            result = Utility.database.findFile(Utility.sessionID, md5_selected, None, 1)
+            if len(result) == 0:
+                down=Scaricamento(self.prog_scaricamento, self.var_progresso, self.file_aggiunti, self.list_file, info)
+                down.start()
+            else:
+                self.print_console('hai già questo file! ')
         except Exception as e:
             logging.debug("NULLA SELEZIONATO")
-
-    def btn_aggiungi_file_click(self):
-        path_file = askopenfilename(initialdir=Utility.PATHDIR)
-
-        if path_file != '':
-            sock_end = Request.create_socket(Utility.IP_TRACKER, Utility.PORT_TRACKER)
-            Request.add_file(sock_end, path_file)
-            num_parts = Response.add_file_ack(sock_end)
-            Response.close_socket(sock_end)
-
-            if num_parts != None:
-
-                md5_file = Utility.generateMd5(path_file)
-                file_name = path_file.split('/')[-1]
-                elem = (md5_file, file_name, num_parts)
-
-                ## aggiornamento database ocn l'aggiunta del file e delle parti
-                Utility.database.addFile(Utility.sessionID, file_name, md5_file, os.stat(path_file).st_size, Utility.LEN_PART)
-                Utility.database.addPart(md5_file, Utility.sessionID, '1' * int(num_parts))
-
-                Divide.Divider.divide(Utility.PATHDIR, Utility.PATHTEMP, file_name, Utility.LEN_PART)
-
-                self.file_aggiunti.append(elem)
-                self.list_file.insert(END, file_name)
-
-                self.print_console('elemento aggiunto: ' + str(elem))
-                logging.debug('aggiunto: ' + path_file)
 
     def btn_rimuovi_file_click(self):
         try:
