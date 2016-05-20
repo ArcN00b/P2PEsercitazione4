@@ -328,6 +328,8 @@ class ManageDB:
                 c.execute("SELECT SESSIONID,NAME FROM FILES WHERE MD5=:M",{"M":Md5})
                 count=c.fetchall()
             elif flag == 3:
+                if name == '*':
+                    name = ''
                 c.execute("SELECT * FROM FILES WHERE NAME LIKE '%" + name + "%' ")
                 count = c.fetchall()
             elif flag == 4:

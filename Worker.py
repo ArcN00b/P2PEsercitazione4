@@ -220,7 +220,7 @@ class Worker(threading.Thread):
                 # Ottengo la parte dal database modificando il valore in posizione partNum
                 part = Utility.database.findPartForMd5AndSessionId(ssId, md5)
                 #Aggiungo al database i dati di scaricamento della persona
-                if (len(part)==0):
+                if len(part)==0:
                     l=Utility.database.findFile(None,md5,None,4)
                     a=int(l[0][0])# Len file
                     b=int(l[0][1]) # Len part
@@ -236,13 +236,23 @@ class Worker(threading.Thread):
                     Utility.database.addPart(md5,ssId,parte)
                     part = Utility.database.findPartForMd5AndSessionId(ssId, md5)
                 tmp = part[0][0]# Prendo la stringa
-                part =tmp[:partNum]+ '1'+tmp[partNum+1:]
+                part = tmp[:partNum]+ '1'+tmp[partNum+1:]
                 #tmp = tmp[partNum] = "1"
                 #part = "".join(tmp)
 
                 # Conto quante parti ha attualmente il peer e aggiorno il database
                 partOwn = part.count("1")
                 Utility.database.updatePart(ssId, md5, part)
+                name = Utility.database.findFile(None, md5, None, 2)[0][1]
+                l = Utility.database.findFile(None, md5, None, 4)
+                lenFile = l[0][0]
+                lenPart = l[0][1]
+                if int(lenFile) % int(lenPart) == 0:
+                    numPart = int(lenFile) // int(lenPart)
+                else:
+                    numPart = (int(lenFile) // int(lenPart)) + 1
+                if numPart == partOwn:
+                    Utility.database.addFile(ssId,name,md5,lenFile,lenPart)
 
                 # Preparo e invio il messaggio di ritorno
                 msgRet = "APAD" + str(partOwn).zfill(8)

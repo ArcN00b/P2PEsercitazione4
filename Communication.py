@@ -71,15 +71,15 @@ class Download_Manager:
             self.var_progress.set('Download completato')
 
             # Avviso il tracker di avere il file completo
-            try:
+            '''try:
                 msgFile = 'ADDR' + Utility.sessionID + '{:0>10}'.format(lenFile) + '{:0>6}'.format(lenPart) + self.name.ljust(100) + self.md5
                 addTracker = Request.Request.create_socket(Utility.IP_TRACKER, int(Utility.PORT_TRACKER))
-                sentTracker = addTracker.send(msgFile.encode())
+                sentTracker = addTracker.send(msgFile.encode())'''
 
-                # Aggiungo il file al database
-                Utility.database.addFile(Utility.sessionID, self.name, self.md5, lenFile, lenPart)
+            # Aggiungo il file al database
+            Utility.database.addFile(Utility.sessionID, self.name, self.md5, lenFile, lenPart)
 
-                # Attendo risposta aggiunta file
+            '''# Attendo risposta aggiunta file
                 Response.add_file_ack(addTracker)
                 Request.Request.close_socket(addTracker)
 
@@ -89,7 +89,7 @@ class Download_Manager:
                     return
 
             except Exception as e:
-                print(e)
+                print(e)'''
 
 class Downloader(threading.Thread):
     # Costruttore che inizializza gli attributi del Worker
