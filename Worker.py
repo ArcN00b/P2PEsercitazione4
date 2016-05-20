@@ -108,7 +108,6 @@ class Worker(threading.Thread):
 
             elif command == "LOOK":
                 # Todo da testare
-                #Versione Da testare NUOVA
                 ssId=fields[0]
                 name=fields[1]
                 # controllo se il sessionId è nel database
@@ -117,36 +116,7 @@ class Worker(threading.Thread):
                     numFileMatch=len(dati)
                     msgp=''
                     for i in range(0,len(dati)):
-                        #Valid e una variabile che indica se questo file deve essere inserito nella ricerca
-                        valid=False
-                        #dati[i][0]=>md5, dati[i][1]=>nomeFile, dati[i][2]=>lunghezzaFile,
-                        #dati[i][3]=>lunghezza parte,   dati[i][4]=>sessionId
-
-                        # Controllo se non sono stato io a caricare il file i-esimo
                         if dati[i][4]!=ssId:
-                            #Non ho caricato io il file
-                            #Contro se ne sono diventato una sorgente scaricandolo
-                            p=Utility.database.findPartForMd5AndSessionId(dati[i][4],dati[i][0])
-                            #Controllo se possiedo delle parti
-                            if len(p)>0:
-                                #Possiedo delle parti del file i-esimo
-                                #calcolo il numero delle parti del file i-esimo
-                                a=int(dati[i][2])
-                                b=int(dati[i][3])
-                                if a%b==0:
-                                    numPart=a//b
-                                else:
-                                    numPart=(a//b)+1
-                                #Prendo dal database la stringa delle parti del file i-esimo relativo a questo sessionId
-                                nump=(p[0][0]).count('1')
-                                #controllo se il numero delle parti in mio possesso e diverso dal numero delle parti totali
-                                # se lo e vuol dire che non sono una sorgente del file e quindi posso scaricarlo
-                                if nump!=numPart:
-                                    valid=True
-                            else:
-                                valid=True #Non possiedo delle parti del file i-esimo
-
-                        if valid:
                             msgp=msgp+dati[i][0] #Aggiungo l'iesimo md5
                             msgp=msgp+dati[i][1]+' '*(100-len(dati[i][1])) #Aggiungo il nome del file
                             msgp=msgp+'{:0>10}'.format(int(dati[i][2])) #Aggiungo la lunghezza del file
@@ -155,27 +125,8 @@ class Worker(threading.Thread):
                             numFileMatch=numFileMatch-1
 
                     msgRet="ALOO"+'{:0>3}'.format(numFileMatch)+msgp
+
                     self.client.sendall(msgRet.encode())
-
-                #Versione Vecchia FUNZIONANTE NON CANCELLARE
-                '''ssId=fields[0]
-                name=fields[1]
-                # controllo se il sessionId è nel database
-                if len(self.database.findPeer(ssId,None,None,2))>0:
-                    dati=self.database.findMd5(name.strip())
-                    numFileMatch=len(dati)
-                    msgp=''
-                    for i in range(0,len(dati)):
-                        if dati[i][4]!=ssId:
-                            msgp=msgp+dati[i][0] #Aggiungo l'iesimo md5
-                            msgp=msgp+dati[i][1]+' '*(100-len(dati[i][1])) #Aggiungo il nome del file
-                            msgp=msgp+'{:0>10}'.format(int(dati[i][2])) #Aggiungo la lunghezza del file
-                            msgp=msgp+'{:0>6}'.format(int(dati[i][3])) #Aggiungo la lunghezza della parte
-                        else:
-                           numFileMatch=numFileMatch-1
-
-                    msgRet="ALOO"+'{:0>3}'.format(numFileMatch)+msgp
-                    self.client.sendall(msgRet.encode())'''
 
             elif command == "ALOO":
                 True
@@ -192,12 +143,10 @@ class Worker(threading.Thread):
                     for i in range(0,num):
                         if ssId!=dati[i][0]:
                             datiPeer=self.database.findPeer(dati[i][0],None,None,2)
-                            #Aggiungo i dati del peer
-                            msgp=msgp+datiPeer[0][0].encode() #Ip
-                            msgp=msgp+datiPeer[0][1].encode() #Porta
-                            #Aggiungo i dati delle parti
+                            msgp=msgp+datiPeer[0][0].encode()
+                            msgp=msgp+datiPeer[0][1].encode()
                             parte=dati[i][1]+'0'*(8-(len(dati[i][1])%8))
-                            tmp=Utility.toBytes(dati[i][1],0) #Strina delle parti convertita
+                            tmp=Utility.toBytes(dati[i][1],0)
                             msgp=msgp+tmp
                         else:
                             num=num-1
@@ -294,6 +243,17 @@ class Worker(threading.Thread):
                 # Conto quante parti ha attualmente il peer e aggiorno il database
                 partOwn = part.count("1")
                 Utility.database.updatePart(ssId, md5, part)
+                name = Utility.database.findFile(None, md5, None, 2)[0][1]
+                l = Utility.database.findFile(None, md5, None, 4)
+                lenFile = l[0][0]
+                lenPart = l[0][1]
+                if int(lenFile) % int(lenPart) == 0:
+                    numPart = int(lenFile) // int(lenPart)
+                else:
+                    numPart = (int(lenFile) // int(lenPart)) + 1
+
+                if numPart == partOwn:
+                    Utility.database.addFile(ssId,name,md5,lenFile,lenPart)
 
                 # Preparo e invio il messaggio di ritorno
                 msgRet = "APAD" + str(partOwn).zfill(8)

@@ -6,14 +6,14 @@ import socket
 import threading
 
 class Utility:
-    IPv4_TRACKER = "172.030.007.010"
-    IPv6_TRACKER = "fc00:0000:0000:0000:0000:0000:0007:0010"
+    IPv4_TRACKER = "172.030.007.001"
+    IPv6_TRACKER = "fc00:0000:0000:0000:0000:0000:0007:0001"
     IP_TRACKER = IPv4_TRACKER+'|'+IPv6_TRACKER
 
     PORT_TRACKER = 3000
 
-    IPV4_MY = "172.030.007.007"
-    IPV6_MY = "fc00:0000:0000:0000:0000:0000:0007:0007"
+    IPV4_MY = "172.030.007.001"
+    IPV6_MY = "fc00:0000:0000:0000:0000:0000:0007:0001"
     IP_MY = IPV4_MY+'|'+IPV6_MY
 
     PORT_MY = 12345
@@ -102,7 +102,7 @@ class Utility:
         hash.update((Utility.IPV4_MY+'|'+Utility.IPV6_MY+str(Utility.PORT_MY)).encode())
 
         # Return del digest
-        return hash.hexdigest()
+        return hash.hexdigest().upper()
 
     # Ritorna i due ip data la stringa generale
     # Ritorna prima ipv4 e poi ipv6

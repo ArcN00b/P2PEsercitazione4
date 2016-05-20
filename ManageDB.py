@@ -241,7 +241,7 @@ class ManageDB:
             count = c.fetchall()
 
             if (count[0][0]>0):
-                #c.execute("DELETE FROM FILES WHERE SESSIONID=:SID", {"SID": sessionId})
+                c.execute("DELETE FROM FILES WHERE SESSIONID=:SID", {"SID": sessionId})
                 c.execute("DELETE FROM PARTS WHERE SESSIONID=:SID", {"SID": sessionId})
                 conn.commit()
 
@@ -328,6 +328,8 @@ class ManageDB:
                 c.execute("SELECT SESSIONID,NAME FROM FILES WHERE MD5=:M",{"M":Md5})
                 count=c.fetchall()
             elif flag == 3:
+                if name == '*':
+                    name = ''
                 c.execute("SELECT * FROM FILES WHERE NAME LIKE '%" + name + "%' ")
                 count = c.fetchall()
             elif flag == 4:

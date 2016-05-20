@@ -4,6 +4,7 @@ from Utility import *
 from Response import *
 from Merge_Divide import Merge
 import time
+import sys
 import Request
 import random
 import threading
@@ -53,7 +54,9 @@ class Download_Manager:
             diff = fine - inizio
             i += 1
 
+        print(' sto per fare il join ')
         for t in threads:
+            print('sto joinando i file')
             t.join()
 
         # Verifico se sono stati scaricati tutti i file e in tal caso eseguo il merge
@@ -70,26 +73,8 @@ class Download_Manager:
             print("Merge completato")
             self.var_progress.set('Download completato')
 
-            ''' Avviso il tracker di avere il file completo
-            try:
-                msgFile = 'ADDR' + Utility.sessionID + '{:0>10}'.format(lenFile) + '{:0>6}'.format(lenPart) + self.name.ljust(100) + self.md5
-                addTracker = Request.Request.create_socket(Utility.IP_TRACKER, int(Utility.PORT_TRACKER))
-                sentTracker = addTracker.send(msgFile.encode())
-
-                # Aggiungo il file al database
-                Utility.database.addFile(Utility.sessionID, self.name, self.md5, lenFile, lenPart)
-
-                # Attendo risposta aggiunta file
-                Response.add_file_ack(addTracker)
-                Request.Request.close_socket(addTracker)
-
-                # TODO pensare a come agire in caso di ADDR non inviata correttamente
-                if sentTracker is None or sentTracker < len(msgFile):
-                    print('ADDR non riuscita in download')
-                    return
-
-            except Exception as e:
-                print(e)'''
+            # Aggiungo il file al database
+            Utility.database.addFile(Utility.sessionID, self.name, self.md5, lenFile, lenPart)
 
 class Downloader(threading.Thread):
     # Costruttore che inizializza gli attributi del Worker
@@ -129,13 +114,17 @@ class Downloader(threading.Thread):
             sent = sock.send(mess.encode())
             if sent is None or sent < len(mess):
                 sock.close()
-                raise Exception('recupero non effettuato')
+                self.semaphore.release()
+                logging.debug('recupero non effettuato')
+                sys.exit(1)
 
             # ricevo i primi 10 Byte che sono "ARET" + n_chunk
             recv_mess = sock.recv(10).decode()
         except Exception as e:
             sock.close()
-            raise Exception("ERRORE :" + str(e))
+            self.semaphore.release()
+            logging.debug("ERRORE :" + str(e))
+            sys.exit(1)
 
         if recv_mess[:4] == "AREP":
             try:
@@ -151,13 +140,17 @@ class Downloader(threading.Thread):
                     while len(tmp) < 5:
                         tmp += sock.recv(5 - len(tmp))
                         if len(tmp) == 0:
-                            raise Exception("Socket close")
+                            self.semaphore.release()
+                            logging.debug("Socket close")
+                            sys.exit(1)
 
                     # Eseguo controlli di coerenza su ciò che viene ricavato dal socket
                     try:
                         int(tmp.decode())
                     except Exception as e:
-                        raise Exception("number format exception")
+                        self.semaphore.release()
+                        logging.debug("number format exception")
+                        sys.exit(1)
 
                     chunklen = int(tmp.decode())
                     buffer = sock.recv(chunklen)  # Leggo il contenuto del chunk
@@ -167,7 +160,9 @@ class Downloader(threading.Thread):
                         tmp = sock.recv(chunklen - len(buffer))
                         buffer += tmp
                         if len(tmp) == 0:
-                            raise Exception("Socket close")
+                            self.semaphore.release()
+                            logging.debug("Socket Close")
+                            sys.exit(1)
                     buff += buffer
 
                 # apro il file per la scrittura
@@ -179,7 +174,9 @@ class Downloader(threading.Thread):
 
                 print('download parte completato')
             except Exception as e:
-                raise Exception("--- ERRORE DOWNLOAD PARTE : " + e)
+                self.semaphore.release()
+                logging.debug("--- ERRORE DOWNLOAD PARTE : " + str(e))
+                sys.exit(1)
 
             try:
                 # Avviso il tracker di aver completato il download della parte del file
@@ -201,7 +198,9 @@ class Downloader(threading.Thread):
                 Utility.blocco.release()
 
             except Exception as e:
-                raise Exception('-- Errore comunicazione parte scaricata RPAD: ' + str(e))
+                self.semaphore.release()
+                logging.debug('-- Errore comunicazione parte scaricata RPAD: ' + str(e))
+                sys.exit(1)
 
         Utility.blocco.acquire()
         self.progress_bar.step(100 / self.num_parts)
