@@ -58,7 +58,7 @@ class Scaricamento(threading.Thread):
                 myPart=Utility.database.findPartForMd5AndSessionId(Utility.sessionID, md5)
                 myPart=myPart[0][0]
             except Exception as e:
-                print("Errore Aggiornamento parti, reinvio richiesta"+str(e))
+                print("Errore Aggiornamento parti, reinvio richiesta "+str(e))
                 valid_request=False
 
             # Da qui in avanti vi e tutta la logica di funzionamento del scaricamento
